@@ -1,7 +1,9 @@
 """Train a KWS model on Google Speech Commands v2.
 
 Usage:
-    python train.py                          # train DS-CNN with defaults
+    python train.py --model dscnn
+    python train.py --model tcresnet
+    python train.py --model gru
     python train.py --model dscnn --epochs 50 --lr 1e-3
 """
 
@@ -16,6 +18,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kws.data.dataset import get_dataloaders
 from kws.models.dscnn import DSCNN
+from kws.models.tcresnet import TCResNet8
+from kws.models.gru import GRU48
 
 
 def train_epoch(model, loader, optimizer, criterion, device):
@@ -50,7 +54,7 @@ def evaluate(model, loader, criterion, device):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', default='dscnn', choices=['dscnn'])
+    parser.add_argument('--model', default='dscnn', choices=['dscnn', 'tcresnet', 'gru'])
     parser.add_argument('--data-root', default='./data/speechcommands')
     parser.add_argument('--config', default='./kws/mfcc_config.json')
     parser.add_argument('--epochs', type=int, default=50)
@@ -84,6 +88,10 @@ def main():
 
     if args.model == 'dscnn':
         model = DSCNN(n_classes=config['n_classes']).to(device)
+    elif args.model == 'tcresnet':
+        model = TCResNet8(n_classes=config['n_classes'], n_mfcc=config['n_mfcc']).to(device)
+    elif args.model == 'gru':
+        model = GRU48(n_classes=config['n_classes'], n_mfcc=config['n_mfcc']).to(device)
 
     n_params = sum(p.numel() for p in model.parameters())
     print(f"Model: {args.model} | Parameters: {n_params:,}")
