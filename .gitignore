@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# Downloaded datasets — too large for git
+/data/
+
+# Checkpoints — regenerable
+kws/checkpoints/*.pt
+anomaly/checkpoints/*.pt
+
+# macOS
+.DS_Store
