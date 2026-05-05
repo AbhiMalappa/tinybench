@@ -24,6 +24,7 @@ class SpeechCommandsDataset(Dataset):
     """
 
     def __init__(self, root, subset, config, stats=None):
+        os.makedirs(root, exist_ok=True)
         self.data = torchaudio.datasets.SPEECHCOMMANDS(
             root, url='speech_commands_v0.02', download=True, subset=subset
         )
