@@ -63,6 +63,7 @@ def main():
     parser.add_argument('--weight-decay', type=float, default=1e-4)
     parser.add_argument('--checkpoints-dir', default='./kws/checkpoints')
     parser.add_argument('--num-workers', type=int, default=4)
+    parser.add_argument('--augment', action='store_true', help='Enable time-shift augmentation during training')
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -81,6 +82,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         stats_path=stats_path,
+        augment=args.augment,
     )
 
     with open(args.config) as f:

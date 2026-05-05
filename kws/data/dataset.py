@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import torch
 import torch.nn.functional as F
 import torchaudio
@@ -15,6 +16,9 @@ LABELS = sorted([
 ])
 LABEL_TO_IDX = {label: idx for idx, label in enumerate(LABELS)}
 
+# Max time shift for augmentation: ±100ms at 16kHz
+_MAX_SHIFT = 1600
+
 
 class SpeechCommandsDataset(Dataset):
     """Wraps torchaudio SPEECHCOMMANDS and returns MFCC features.
@@ -23,7 +27,7 @@ class SpeechCommandsDataset(Dataset):
     width, matching the DS-CNN stem kernel convention (10, 4).
     """
 
-    def __init__(self, root, subset, config, stats=None):
+    def __init__(self, root, subset, config, stats=None, augment=False):
         os.makedirs(root, exist_ok=True)
         self.data = torchaudio.datasets.SPEECHCOMMANDS(
             root, url='speech_commands_v0.02', download=True, subset=subset
@@ -41,9 +45,19 @@ class SpeechCommandsDataset(Dataset):
         self.target_samples = config['sample_rate']  # 16000
         self.n_frames = config['n_frames']           # 49
         self.stats = stats  # {'mean': (n_mfcc, 1), 'std': (n_mfcc, 1)}
+        self.augment = augment
+
+    def _time_shift(self, waveform):
+        """Randomly shift waveform by ±100ms, zero-padding the gap."""
+        shift = random.randint(-_MAX_SHIFT, _MAX_SHIFT)
+        if shift > 0:
+            waveform = torch.cat([torch.zeros_like(waveform[..., :shift]), waveform[..., :-shift]], dim=-1)
+        elif shift < 0:
+            waveform = torch.cat([waveform[..., -shift:], torch.zeros_like(waveform[..., shift:])], dim=-1)
+        return waveform
 
     def _extract(self, waveform):
-        """Compute MFCC and return (n_mfcc, n_frames) — raw, unnormalized."""
+        """Pad/trim to 1s, compute MFCC, return (n_mfcc, n_frames)."""
         if waveform.shape[-1] < self.target_samples:
             waveform = F.pad(waveform, (0, self.target_samples - waveform.shape[-1]))
         else:
@@ -58,12 +72,15 @@ class SpeechCommandsDataset(Dataset):
 
     def __getitem__(self, idx):
         waveform, _, label, *_ = self.data[idx]
+
+        if self.augment:
+            waveform = self._time_shift(waveform)
+
         feat = self._extract(waveform)  # (n_mfcc, n_frames)
 
         if self.stats is not None:
             feat = (feat - self.stats['mean']) / (self.stats['std'] + 1e-8)
 
-        # DS-CNN expects (1, n_frames, n_mfcc): transpose so time is the spatial height
         feat = feat.T.unsqueeze(0)  # (1, n_frames, n_mfcc)
         return feat, LABEL_TO_IDX[label]
 
@@ -77,7 +94,7 @@ def compute_normalization_stats(data_root, config):
     Returns {'mean': (n_mfcc, 1), 'std': (n_mfcc, 1)} — shaped for broadcasting
     against (n_mfcc, n_frames) before the final transpose in __getitem__.
     """
-    dataset = SpeechCommandsDataset(data_root, 'training', config, stats=None)
+    dataset = SpeechCommandsDataset(data_root, 'training', config, stats=None, augment=False)
     loader = DataLoader(dataset, batch_size=512, shuffle=False, num_workers=4)
 
     n_mfcc = config['n_mfcc']
@@ -96,11 +113,10 @@ def compute_normalization_stats(data_root, config):
     mean = mean_sum / n_total
     std = (sq_sum / n_total - mean ** 2).sqrt().clamp(min=1e-8)
 
-    # Unsqueeze to (n_mfcc, 1) so they broadcast with (n_mfcc, n_frames)
     return {'mean': mean.unsqueeze(1), 'std': std.unsqueeze(1)}
 
 
-def get_dataloaders(data_root, config_path, batch_size=64, num_workers=4, stats_path=None):
+def get_dataloaders(data_root, config_path, batch_size=64, num_workers=4, stats_path=None, augment=False):
     with open(config_path) as f:
         config = json.load(f)
 
@@ -113,9 +129,10 @@ def get_dataloaders(data_root, config_path, batch_size=64, num_workers=4, stats_
             torch.save(stats, stats_path)
             print(f"Saved normalization stats to {stats_path}")
 
-    train_ds = SpeechCommandsDataset(data_root, 'training', config, stats=stats)
-    val_ds = SpeechCommandsDataset(data_root, 'validation', config, stats=stats)
-    test_ds = SpeechCommandsDataset(data_root, 'testing', config, stats=stats)
+    # augment=True only for training set, never for val/test
+    train_ds = SpeechCommandsDataset(data_root, 'training', config, stats=stats, augment=augment)
+    val_ds = SpeechCommandsDataset(data_root, 'validation', config, stats=stats, augment=False)
+    test_ds = SpeechCommandsDataset(data_root, 'testing', config, stats=stats, augment=False)
 
     pin = torch.cuda.is_available()
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin)
