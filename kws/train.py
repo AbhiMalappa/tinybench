@@ -64,6 +64,8 @@ def main():
     parser.add_argument('--checkpoints-dir', default='./kws/checkpoints')
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--augment', action='store_true', help='Enable time-shift augmentation during training')
+    parser.add_argument('--cache-dir', default=None,
+                        help='Directory for pre-computed MFCC cache. Built on first run, reused after.')
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -83,6 +85,7 @@ def main():
         num_workers=args.num_workers,
         stats_path=stats_path,
         augment=args.augment,
+        cache_dir=args.cache_dir,
     )
 
     with open(args.config) as f:
