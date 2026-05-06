@@ -71,15 +71,6 @@ class SpeechCommandsDataset(Dataset):
             else:
                 self.cache = self._build_and_save_cache(cache_path, subset)
 
-        if cache_dir is not None:
-            os.makedirs(cache_dir, exist_ok=True)
-            cache_path = os.path.join(cache_dir, f'mfcc_{subset}.pt')
-            if os.path.exists(cache_path):
-                print(f"Loading MFCC cache: {cache_path}")
-                self.cache = torch.load(cache_path, weights_only=True)
-            else:
-                self.cache = self._build_and_save_cache(cache_path, subset)
-
     def _extract_mfcc(self, waveform):
         """Pad/trim to 1s, compute MFCC, return (n_mfcc, n_frames) unnormalized."""
         if waveform.shape[-1] < self.target_samples:
