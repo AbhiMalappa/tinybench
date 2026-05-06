@@ -13,7 +13,6 @@ Usage (run from tinybench/):
 """
 
 import argparse
-import inspect
 import json
 import os
 import sys
@@ -167,9 +166,9 @@ def convert_to_tflite_int8(onnx_path, tflite_path, test_loader, n_calib):
     """ONNX → TFLite INT8.
 
     Strategy:
-      1. If installed onnx2tf supports 'output_integer_quant_tflite', use it.
-      2. Otherwise convert to SavedModel (float), then apply TFLiteConverter INT8.
-      3. If onnx2tf outputs TFLite directly without SavedModel, warn and use float TFLite.
+      1. Try onnx2tf with output_integer_quant_tflite=True (works on 2.x).
+      2. If that fails, convert to SavedModel then apply TFLiteConverter INT8.
+      3. If no SavedModel (newer onnx2tf outputs TFLite directly), warn and use float.
     """
     import tensorflow as tf
     import onnx2tf
@@ -179,13 +178,10 @@ def convert_to_tflite_int8(onnx_path, tflite_path, test_loader, n_calib):
     output_dir = tempfile.mkdtemp()
     print(f"Converting ONNX → TFLite INT8 (calibration: {n_calib} samples)...")
 
-    # Probe onnx2tf API to pick the right call signature
-    onnx2tf_params = inspect.signature(onnx2tf.convert).parameters
-    supports_int8_param = 'output_integer_quant_tflite' in onnx2tf_params
-
     tflite_bytes = None
 
-    if supports_int8_param:
+    # Try INT8-aware conversion first (onnx2tf 2.x supports this via **kwargs)
+    try:
         onnx2tf.convert(
             input_onnx_file_path=onnx_path,
             output_folder_path=output_dir,
@@ -194,18 +190,21 @@ def convert_to_tflite_int8(onnx_path, tflite_path, test_loader, n_calib):
             non_verbose=True,
         )
         int8_files = glob.glob(os.path.join(output_dir, '*full_integer_quant*.tflite'))
+        if not int8_files:
+            int8_files = glob.glob(os.path.join(output_dir, '*integer_quant*.tflite'))
         if int8_files:
             int8_files.sort(key=lambda x: 'full_integer_quant' not in x)
             shutil.copy(int8_files[0], tflite_path)
             with open(tflite_path, 'rb') as f:
                 tflite_bytes = f.read()
+            print(f"INT8 TFLite produced directly by onnx2tf.")
+    except Exception as e:
+        print(f"onnx2tf INT8 direct path failed ({e}), trying fallback...")
+        shutil.rmtree(output_dir)
+        output_dir = tempfile.mkdtemp()
 
     if tflite_bytes is None:
-        # Either API doesn't support INT8 params, or no INT8 output was found —
-        # convert to float first, then quantize via TFLiteConverter if SavedModel exists.
-        if supports_int8_param:
-            shutil.rmtree(output_dir)
-            output_dir = tempfile.mkdtemp()
+        # Fallback: convert to float, then quantize via TFLiteConverter if SavedModel exists
         onnx2tf.convert(
             input_onnx_file_path=onnx_path,
             output_folder_path=output_dir,
