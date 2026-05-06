@@ -35,25 +35,41 @@ class SpeechCommandsDataset(Dataset):
     """
 
     def __init__(self, root, subset, config, stats=None, augment=False, cache_dir=None):
-        os.makedirs(root, exist_ok=True)
-        self.raw_data = torchaudio.datasets.SPEECHCOMMANDS(
-            root, url='speech_commands_v0.02', download=True, subset=subset
-        )
-        self.mfcc_transform = torchaudio.transforms.MFCC(
-            sample_rate=config['sample_rate'],
-            n_mfcc=config['n_mfcc'],
-            melkwargs={
-                'n_fft': config['n_fft'],
-                'hop_length': config['hop_length'],
-                'win_length': config['win_length'],
-                'n_mels': config['n_mels'],
-            },
-        )
         self.target_samples = config['sample_rate']
         self.n_frames = config['n_frames']
         self.stats = stats
         self.augment = augment
         self.cache = None
+        self.raw_data = None
+
+        # Check if cache already exists — if so, skip the 2.3GB download entirely
+        cache_path = os.path.join(cache_dir, f'mfcc_{subset}.pt') if cache_dir else None
+        cache_ready = cache_path and os.path.exists(cache_path)
+
+        if not cache_ready:
+            # Need raw WAV files to build the cache (or to run without cache)
+            os.makedirs(root, exist_ok=True)
+            self.raw_data = torchaudio.datasets.SPEECHCOMMANDS(
+                root, url='speech_commands_v0.02', download=True, subset=subset
+            )
+            self.mfcc_transform = torchaudio.transforms.MFCC(
+                sample_rate=config['sample_rate'],
+                n_mfcc=config['n_mfcc'],
+                melkwargs={
+                    'n_fft': config['n_fft'],
+                    'hop_length': config['hop_length'],
+                    'win_length': config['win_length'],
+                    'n_mels': config['n_mels'],
+                },
+            )
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+            if cache_ready:
+                print(f"Loading MFCC cache: {cache_path}")
+                self.cache = torch.load(cache_path, weights_only=True)
+            else:
+                self.cache = self._build_and_save_cache(cache_path, subset)
 
         if cache_dir is not None:
             os.makedirs(cache_dir, exist_ok=True)
@@ -134,6 +150,8 @@ class SpeechCommandsDataset(Dataset):
         return feat, label
 
     def __len__(self):
+        if self.cache is not None:
+            return len(self.cache['labels'])
         return len(self.raw_data)
 
 
