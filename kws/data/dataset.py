@@ -18,6 +18,8 @@ LABEL_TO_IDX = {label: idx for idx, label in enumerate(LABELS)}
 
 # ±100ms at 16kHz = ±1600 samples = ±5 MFCC frames (hop_length=320)
 _MAX_FRAME_SHIFT = 5
+# SpecAugment: mask up to 2 MFCC coefficient rows at a time
+_FREQ_MASK_MAX = 2
 
 
 class SpeechCommandsDataset(Dataset):
@@ -104,6 +106,14 @@ class SpeechCommandsDataset(Dataset):
             feat[:, shift:] = 0
         return feat
 
+    def _freq_mask(self, feat):
+        """SpecAugment: zero out up to 2 consecutive MFCC coefficient rows."""
+        n_mfcc = feat.shape[0]
+        width = random.randint(1, _FREQ_MASK_MAX)
+        start = random.randint(0, n_mfcc - width)
+        feat[start:start + width, :] = 0
+        return feat
+
     def __getitem__(self, idx):
         if self.cache is not None:
             feat = self.cache['features'][idx].clone()  # (n_mfcc, n_frames)
@@ -115,6 +125,7 @@ class SpeechCommandsDataset(Dataset):
 
         if self.augment:
             feat = self._time_shift(feat)
+            feat = self._freq_mask(feat)
 
         if self.stats is not None:
             feat = (feat - self.stats['mean']) / (self.stats['std'] + 1e-8)
