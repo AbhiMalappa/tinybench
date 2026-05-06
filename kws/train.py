@@ -57,7 +57,7 @@ def main():
     parser.add_argument('--model', default='dscnn', choices=['dscnn', 'tcresnet', 'gru'])
     parser.add_argument('--data-root', default='./data/speechcommands')
     parser.add_argument('--config', default='./kws/mfcc_config.json')
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=150, help='Maximum epochs (early stopping usually kicks in before this)')
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--weight-decay', type=float, default=1e-4)
@@ -66,6 +66,8 @@ def main():
     parser.add_argument('--augment', action='store_true', help='Enable time-shift augmentation during training')
     parser.add_argument('--cache-dir', default=None,
                         help='Directory for pre-computed MFCC cache. Built on first run, reused after.')
+    parser.add_argument('--patience', type=int, default=15,
+                        help='Early stopping: stop if val acc does not improve for this many epochs')
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -106,6 +108,7 @@ def main():
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     best_val_acc = 0.0
+    epochs_no_improve = 0
     best_ckpt = os.path.join(args.checkpoints_dir, f'{args.model}_best.pt')
 
     for epoch in range(1, args.epochs + 1):
@@ -121,6 +124,7 @@ def main():
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            epochs_no_improve = 0
             torch.save({
                 'epoch': epoch,
                 'model': args.model,
@@ -130,6 +134,11 @@ def main():
                 'stats': stats,
             }, best_ckpt)
             print(f"  -> Best model saved (val acc {val_acc*100:.2f}%)")
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= args.patience:
+                print(f"\nEarly stopping at epoch {epoch} (no improvement for {args.patience} epochs)")
+                break
 
     checkpoint = torch.load(best_ckpt, map_location=device, weights_only=False)
     model.load_state_dict(checkpoint['model_state'])
