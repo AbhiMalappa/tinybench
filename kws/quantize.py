@@ -63,38 +63,51 @@ def export_onnx(model, onnx_path, n_mfcc):
 
 
 def convert_to_tflite_int8(onnx_path, tflite_path, test_loader, n_calib):
-    """ONNX → TF SavedModel (onnx2tf) → TFLite INT8 (per-channel weights)."""
-    import tensorflow as tf
-    import onnx2tf
+    """ONNX → TFLite INT8 using onnx2tf's native INT8 quantization.
 
-    tf_dir = tempfile.mkdtemp()
-    print("Converting ONNX → TF SavedModel...")
+    Newer onnx2tf versions output TFLite flatbuffers directly (not SavedModel),
+    so we use its built-in representative-dataset quantization path.
+    Output file is named *_full_integer_quant.tflite by onnx2tf.
+    """
+    import onnx2tf
+    import glob
+    import shutil
+
+    # Collect calibration samples as list of (1,1,49,10) float32 arrays
+    calib_samples = []
+    count = 0
+    for feats, _ in test_loader:
+        for i in range(feats.shape[0]):
+            if count >= n_calib:
+                break
+            calib_samples.append(feats[i:i+1].numpy().astype(np.float32))
+            count += 1
+        if count >= n_calib:
+            break
+
+    output_dir = tempfile.mkdtemp()
+    print(f"Converting ONNX → TFLite INT8 (calibration: {n_calib} samples)...")
     onnx2tf.convert(
         input_onnx_file_path=onnx_path,
-        output_folder_path=tf_dir,
+        output_folder_path=output_dir,
+        output_integer_quant_tflite=True,
+        representative_dataset_for_int8quant=calib_samples,
         non_verbose=True,
     )
 
-    def representative_dataset():
-        count = 0
-        for feats, _ in test_loader:
-            for i in range(feats.shape[0]):
-                if count >= n_calib:
-                    return
-                yield [feats[i:i+1].numpy().astype(np.float32)]
-                count += 1
+    # Prefer *_full_integer_quant.tflite, fall back to any .tflite
+    int8_files = glob.glob(os.path.join(output_dir, '*full_integer_quant*.tflite'))
+    if not int8_files:
+        int8_files = glob.glob(os.path.join(output_dir, '*.tflite'))
+    if not int8_files:
+        raise FileNotFoundError(
+            f"No TFLite file found in {output_dir}. Contents: {os.listdir(output_dir)}"
+        )
+    int8_files.sort(key=lambda x: 'full_integer_quant' not in x)
 
-    print(f"Quantizing to INT8 (calibration samples: {n_calib})...")
-    converter = tf.lite.TFLiteConverter.from_saved_model(tf_dir)
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.representative_dataset = representative_dataset
-    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-    converter.inference_input_type = tf.int8
-    converter.inference_output_type = tf.int8
-
-    tflite_model = converter.convert()
-    with open(tflite_path, 'wb') as f:
-        f.write(tflite_model)
+    shutil.copy(int8_files[0], tflite_path)
+    with open(tflite_path, 'rb') as f:
+        tflite_model = f.read()
 
     size_kb = os.path.getsize(tflite_path) / 1024
     print(f"TFLite INT8 saved: {tflite_path}  ({size_kb:.1f} KB)")
