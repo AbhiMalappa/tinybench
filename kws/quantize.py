@@ -290,6 +290,8 @@ def main():
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--n-calib', type=int, default=500,
                         help='Calibration samples for INT8 quantization — same value across all models')
+    parser.add_argument('--cache-dir', default=None,
+                        help='Pre-computed MFCC cache directory (same as used during training)')
     parser.add_argument('--skip-tflite', action='store_true',
                         help='Skip TFLite conversion; produce INT8 ONNX only')
     args = parser.parse_args()
@@ -303,6 +305,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         stats_path=stats_path,
+        cache_dir=args.cache_dir,
     )
 
     ckpt = os.path.join(args.checkpoints_dir, f'{args.model}_best.pt')
