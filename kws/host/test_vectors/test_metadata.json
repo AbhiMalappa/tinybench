@@ -1,0 +1,54 @@
+{
+  "n_samples": 11005,
+  "n_frames": 49,
+  "n_mfcc": 10,
+  "n_classes": 35,
+  "input_bytes_per_sample": 490,
+  "input_scale": 0.043562427163124084,
+  "input_zero_point": 3,
+  "output_scale": 0.16371379792690277,
+  "output_zero_point": 6,
+  "tflite_reference_accuracy": 0.9270331667423898,
+  "sources": {
+    "tflite_model": {
+      "path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/to_rohini/dscnn_int8.tflite",
+      "sha256": "9006ecd8728383ce0fa57d11292219a2946ab8cbbd0c93eef8088efd1809add2"
+    },
+    "mfcc_cache": {
+      "path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/mfcc_cache/mfcc_testing.pt",
+      "sha256": "52a7b32f1e00e7b33463fc3c7b1da2ef8c3df230f97f102cd19bcf8a2482fc52"
+    },
+    "mfcc_stats": {
+      "path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/checkpoints/mfcc_stats.pt",
+      "sha256": "0fa551645d1ed518df98af94f4639e47fd341e6beed1b1958e5ed6c0d1cdc287"
+    },
+    "mfcc_config": {
+      "path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/mfcc_config.json",
+      "sha256": "6f4c512261eeb5fbaf6748eecba614f50f443c85fea422aa1cdf24f5e5720b36"
+    }
+  },
+  "outputs": {
+    "test_vectors_int8.npy": {
+      "sha256": "e10e886750937840133fdea8ce68e786f64228c364947253bd3d5354e920a401",
+      "shape": [
+        11005,
+        490
+      ],
+      "dtype": "int8"
+    },
+    "test_labels.npy": {
+      "sha256": "4228f2f124c0b87ff1b89cf383f15b36f83aa49e30ca8c461be8de06c03ec9a8",
+      "shape": [
+        11005
+      ],
+      "dtype": "int64"
+    },
+    "tflite_reference_preds.npy": {
+      "sha256": "d6904884ad2379518203ed0b1ae5cd4551e40f9dc65d6275654b65905e437b72",
+      "shape": [
+        11005
+      ],
+      "dtype": "int64"
+    }
+  }
+}
