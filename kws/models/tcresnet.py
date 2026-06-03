@@ -46,6 +46,7 @@ class TCResNet8(nn.Module):
             ResBlock(32, 48, stride=2),
         )
         self.pool = nn.AdaptiveAvgPool1d(1)
+        self.drop = nn.Dropout(0.3)
         self.classifier = nn.Linear(48, n_classes)
 
     def forward(self, x):
@@ -53,4 +54,4 @@ class TCResNet8(nn.Module):
         x = self.stem(x)
         x = self.blocks(x)
         x = self.pool(x).flatten(1)
-        return self.classifier(x)
+        return self.classifier(self.drop(x))
