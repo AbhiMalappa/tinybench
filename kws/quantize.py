@@ -52,12 +52,15 @@ def evaluate_float32(model, loader):
 
 def export_onnx(model, onnx_path, n_mfcc):
     dummy = torch.zeros(1, 1, 49, n_mfcc)
+    # dynamo=False uses legacy tracing exporter — correctly embeds GRU
+    # _flat_weights as constants; also removes dynamo-related warnings for CNNs.
     torch.onnx.export(
         model, dummy, onnx_path,
         input_names=['mfcc'],
         output_names=['logits'],
         dynamic_axes={'mfcc': {0: 'batch'}, 'logits': {0: 'batch'}},
         opset_version=17,
+        dynamo=False,
     )
     size_kb = os.path.getsize(onnx_path) / 1024
     print(f"ONNX exported: {onnx_path}  ({size_kb:.1f} KB)")
