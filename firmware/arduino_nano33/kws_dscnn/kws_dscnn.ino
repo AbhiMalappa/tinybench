@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <Chirale_TensorFlowLite.h>
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
@@ -10,7 +10,7 @@ constexpr int kTensorArenaSize = 96 * 1024;
 alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
 constexpr int kExpectedInputBytes = 49 * 10;
-constexpr int kBenchRuns = 10;
+constexpr int kBenchRuns = 1;
 constexpr uint32_t kReadTimeoutMs = 30000;
 
 static int8_t input_buffer[kExpectedInputBytes];
@@ -63,7 +63,16 @@ void setup() {
     while (true) {}
   }
 
-  static tflite::AllOpsResolver resolver;
+  static tflite::MicroMutableOpResolver<5> resolver;
+  if (resolver.AddPad()             != kTfLiteOk ||
+      resolver.AddConv2D()          != kTfLiteOk ||
+      resolver.AddDepthwiseConv2D() != kTfLiteOk ||
+      resolver.AddMean()            != kTfLiteOk ||
+      resolver.AddFullyConnected()  != kTfLiteOk) {
+    Serial.println("{\"error\":\"resolver_add_failed\"}");
+    while (true) {}
+  }
+
   static tflite::MicroInterpreter static_interpreter(
       model, resolver, tensor_arena, kTensorArenaSize);
   interpreter = &static_interpreter;

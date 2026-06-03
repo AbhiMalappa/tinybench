@@ -12,6 +12,7 @@ Usage:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -100,6 +101,16 @@ def main():
     parser.add_argument('--results-dir', default='./kws/host/results')
     parser.add_argument('--board-tag', default=None,
                         help='Override device board id used in output filename')
+    parser.add_argument('--resume-from', default=None,
+                        help='Path to existing JSONL log. Appends to that file and skips '
+                             'clip indices already completed. Pair with --reflash-build-dir '
+                             'for safe resume after mid-clip interruption.')
+    parser.add_argument('--reflash-build-dir', default=None,
+                        help='Run `arduino-cli upload --input-dir <dir>` before opening '
+                             'serial. Guarantees a clean device state — critical for resume '
+                             'safety and avoiding stale-state failures from prior runs.')
+    parser.add_argument('--fqbn', default='arduino:mbed_nano:nano33ble',
+                        help='Board FQBN used when --reflash-build-dir is set.')
     args = parser.parse_args()
 
     vec_path = os.path.join(args.vectors_dir, 'test_vectors_int8.npy')
@@ -120,10 +131,21 @@ def main():
     print(f"Vectors:   {vec_path}  ({n_total} total, running {n})")
     print(f"Reference TFLite accuracy: {metadata['tflite_reference_accuracy']*100:.2f}%")
 
+    if args.reflash_build_dir:
+        print(f"Re-flashing {args.fqbn} from {args.reflash_build_dir}...")
+        subprocess.check_call([
+            'arduino-cli', 'upload',
+            '--fqbn', args.fqbn,
+            '--port', args.port,
+            '--input-dir', args.reflash_build_dir,
+        ])
+        print("Flash complete; sleeping 4 s for USB re-enumeration.")
+        time.sleep(4.0)
+
     print(f"Opening serial: {args.port} @ {args.baud}")
     s = serial.Serial(args.port, args.baud, timeout=0.05)
-    time.sleep(1.5)
     s.reset_input_buffer()
+    time.sleep(1.5)
 
     print("Waiting for boot...")
     boot = wait_for_boot(s)
@@ -137,66 +159,108 @@ def main():
         boot = {}
         board_tag = args.board_tag or 'unknown'
 
-    os.makedirs(args.results_dir, exist_ok=True)
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_path = os.path.join(args.results_dir, f'{board_tag}_dscnn_{ts}.jsonl')
-    log_f = open(log_path, 'w')
-    log_f.write(json.dumps({'event': 'boot', 'data': boot,
-                            'metadata': metadata, 'n_samples': n}) + '\n')
+    completed_indices = set()
+    if args.resume_from:
+        if not os.path.exists(args.resume_from):
+            sys.exit(f"--resume-from path does not exist: {args.resume_from}")
+        with open(args.resume_from) as f:
+            for line in f:
+                try:
+                    j = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(j, dict) and 'i' in j:
+                    r = j.get('response')
+                    if isinstance(r, dict) and 'class' in r:
+                        completed_indices.add(j['i'])
+        log_path = args.resume_from
+        log_f = open(log_path, 'a')
+        log_f.write(json.dumps({'event': 'resume', 'ts': datetime.now().isoformat(),
+                                'already_completed': len(completed_indices)}) + '\n')
+        print(f"Resuming: {len(completed_indices)} clips already completed in {log_path}")
+    else:
+        os.makedirs(args.results_dir, exist_ok=True)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        log_path = os.path.join(args.results_dir, f'{board_tag}_dscnn_{ts}.jsonl')
+        log_f = open(log_path, 'w')
+        log_f.write(json.dumps({'event': 'boot', 'data': boot,
+                                'metadata': metadata, 'n_samples': n}) + '\n')
 
-    correct = 0
-    agree = 0
-    failures = 0
-    latencies_ms = []
+    session_failures = 0
+    session_ran = 0
     t_start = time.time()
 
     for i in range(n):
+        if i in completed_indices:
+            continue
         try:
             r = run_one(s, vectors[i].tobytes())
         except Exception as e:
-            failures += 1
+            session_failures += 1
             print(f"  [{i+1}/{n}] FAILED: {e}")
             log_f.write(json.dumps({'i': i, 'error': str(e)}) + '\n')
+            log_f.flush()
             continue
 
         if 'error' in r:
-            failures += 1
+            session_failures += 1
             print(f"  [{i+1}/{n}] device error: {r}")
             log_f.write(json.dumps({'i': i, 'response': r}) + '\n')
+            log_f.flush()
             continue
 
-        pred = r['class']
-        if pred == int(labels[i]):
-            correct += 1
-        if pred == int(ref_preds[i]):
-            agree += 1
-        latencies_ms.append(float(r['latency_ms']))
+        session_ran += 1
         log_f.write(json.dumps({'i': i, 'label': int(labels[i]),
                                 'ref_pred': int(ref_preds[i]), 'response': r}) + '\n')
+        log_f.flush()
 
-        if (i + 1) % 10 == 0 or i < 5 or i + 1 == n:
-            acc = correct / (i + 1 - failures) * 100 if (i + 1 - failures) > 0 else 0.0
-            print(f"  [{i+1}/{n}] pred={pred:2d} label={int(labels[i]):2d} "
-                  f"tflite={int(ref_preds[i]):2d}  acc={acc:.1f}%  "
-                  f"latency={r['latency_ms']:.2f}ms")
+        if session_ran % 10 == 0 or session_ran <= 5 or i + 1 == n:
+            print(f"  [{i+1}/{n}] pred={r['class']:2d} label={int(labels[i]):2d} "
+                  f"tflite={int(ref_preds[i]):2d}  latency={r['latency_ms']:.2f}ms")
 
     log_f.close()
     elapsed = time.time() - t_start
 
-    ok = n - failures
-    if ok == 0:
+    # Cumulative metrics: re-read the full log so resume + fresh runs report uniformly.
+    cum_correct = cum_agree = cum_failed = 0
+    cum_latencies = []
+    completed_total = set()
+    with open(log_path) as f:
+        for line in f:
+            try:
+                j = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(j, dict) or 'i' not in j:
+                continue
+            r = j.get('response')
+            if isinstance(r, dict) and 'class' in r:
+                completed_total.add(j['i'])
+                pred = r['class']
+                i_idx = j['i']
+                if pred == int(labels[i_idx]):
+                    cum_correct += 1
+                if pred == int(ref_preds[i_idx]):
+                    cum_agree += 1
+                cum_latencies.append(float(r['latency_ms']))
+            else:
+                cum_failed += 1
+
+    n_cum = len(completed_total)
+    if n_cum == 0:
         print("\nNo successful runs.")
         sys.exit(2)
 
-    lat = np.array(latencies_ms)
+    lat = np.array(cum_latencies)
     summary = {
         'board': board_tag,
-        'n_attempted': n,
-        'n_ok': ok,
-        'n_failed': failures,
-        'mcu_accuracy': correct / ok,
-        'tflite_reference_accuracy_subset': float((ref_preds[:n] == labels[:n]).mean()),
-        'mcu_tflite_agreement': agree / ok,
+        'n_target': n,
+        'n_completed_cumulative': n_cum,
+        'n_failed_cumulative': cum_failed,
+        'session_ran': session_ran,
+        'session_failed': session_failures,
+        'mcu_accuracy': cum_correct / n_cum,
+        'mcu_tflite_agreement': cum_agree / n_cum,
         'latency_ms': {
             'median': float(np.median(lat)),
             'p50': float(np.percentile(lat, 50)),
@@ -206,7 +270,7 @@ def main():
             'max': float(lat.max()),
         },
         'arena_used_kb': boot.get('arena_used', 0) / 1024.0,
-        'wall_clock_s': elapsed,
+        'session_wall_clock_s': elapsed,
         'log_path': log_path,
     }
     summary_path = log_path.replace('.jsonl', '_summary.json')
@@ -214,17 +278,17 @@ def main():
         json.dump(summary, f, indent=2)
 
     print("\n" + "=" * 60)
-    print(f"Board:        {summary['board']}")
-    print(f"Samples:      {ok}/{n}  ({failures} failed)")
-    print(f"MCU accuracy:                 {summary['mcu_accuracy']*100:.2f}%")
-    print(f"TFLite ref accuracy (subset): {summary['tflite_reference_accuracy_subset']*100:.2f}%")
-    print(f"MCU↔TFLite agreement:         {summary['mcu_tflite_agreement']*100:.2f}%  ← firmware-correctness signal")
-    print(f"Latency median:               {summary['latency_ms']['median']:.3f} ms")
-    print(f"Latency p95 / p99:            {summary['latency_ms']['p95']:.3f} / {summary['latency_ms']['p99']:.3f} ms")
-    print(f"Peak arena RAM:               {summary['arena_used_kb']:.1f} KB")
-    print(f"Wall clock:                   {elapsed:.1f} s  ({elapsed/ok:.2f} s/sample)")
-    print(f"Log:                          {log_path}")
-    print(f"Summary:                      {summary_path}")
+    print(f"Board:                       {summary['board']}")
+    print(f"Cumulative completed:        {n_cum}/{n}  ({cum_failed} failed)")
+    print(f"This session:                {session_ran} new clips ({session_failures} failed)")
+    print(f"MCU accuracy:                {summary['mcu_accuracy']*100:.2f}%")
+    print(f"MCU↔TFLite agreement:        {summary['mcu_tflite_agreement']*100:.2f}%  ← firmware-correctness signal")
+    print(f"Latency median:              {summary['latency_ms']['median']:.3f} ms")
+    print(f"Latency p95 / p99:           {summary['latency_ms']['p95']:.3f} / {summary['latency_ms']['p99']:.3f} ms")
+    print(f"Peak arena RAM:              {summary['arena_used_kb']:.1f} KB")
+    print(f"Session wall clock:          {elapsed:.1f} s")
+    print(f"Log:                         {log_path}")
+    print(f"Summary:                     {summary_path}")
 
 
 if __name__ == '__main__':

@@ -1,130 +1,165 @@
 # Arduino Nano 33 BLE — TinyBench-KWS Deployment Handoff
 
-Status snapshot for resuming work in a fresh session (Claude Code or otherwise).
+State snapshot for resuming work in a fresh session (Claude Code or otherwise).
+
+## Status: end-to-end pipeline is GREEN ✅
+
+20-sample smoke test result (latest):
+```
+MCU accuracy:                 95.00%
+TFLite ref accuracy (subset): 95.00%
+MCU↔TFLite agreement:         100.00%  ← firmware is bit-perfect
+Samples:                      20/20 (0 failed)
+Latency median:               1145.7 ms (p95: 1146.1, p99: 1146.1)
+Wall clock:                   243 s (12.2 s/sample)
+Peak arena RAM:               78 KB
+Flash:                        397 KB (40%)
+```
+
+Latency is **10× too slow** because `AllOpsResolver` uses portable kernels instead of CMSIS-NN. Open optimization task.
 
 ## Goal
-Get DS-CNN INT8 keyword spotting running on Arduino Nano 33 BLE Sense Rev2, driven by a host Python benchmark over USB serial. Output: latency, peak RAM, flash, accuracy vs Python TFLite reference. Part of TinyBench Paper 1.
+DS-CNN INT8 keyword spotting on Arduino Nano 33 BLE Sense Rev2, driven by a host Python benchmark over USB serial. Output: latency, peak RAM, flash, accuracy vs Python TFLite reference. Part of TinyBench Paper 1.
 
-## Working environment
+## Environment
 - Host: macOS (Intel MacBook Pro 2015, 16 GB), running as root
-- Project user: `rohini` — most commands wrapped with `sudo -u rohini env HOME=/Users/rohini ...`
+- Project user: `rohini` — wrap commands with `sudo -u rohini env HOME=/Users/rohini ...`
 - Project root: `/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/`
-- Board: Arduino Nano 33 BLE Sense Rev2 — port `/dev/cu.usbmodem14101`, FQBN `arduino:mbed_nano:nano33ble`
-- Tools installed: `arduino-cli 1.4.1` (via Homebrew), `arduino:mbed_nano@4.5.0` core, `Chirale_TensorFLowLite@2.0.0`, Python 3.9 + `pyserial`, `tensorflow 2.16.2`
+- Board: Arduino Nano 33 BLE Sense Rev2 at `/dev/cu.usbmodem14101`, FQBN `arduino:mbed_nano:nano33ble`
+- Tools: `arduino-cli 1.4.1`, `arduino:mbed_nano@4.5.0`, `Chirale_TensorFLowLite@2.0.0`, Python 3.9 + `pyserial` + `tensorflow 2.16.2`
+
+## Critical learnings (do NOT relearn)
+
+1. **TFLite Micro reuses the input tensor's arena slot during `Invoke()`.** After invoke #1 the input is garbage. For multi-run timing, keep an unmodified copy in a static buffer and `memcpy` into `input->data.int8` before every `Invoke()`. **This was the bug that caused all-class-29 predictions.**
+2. **C++ namespace-scope `const` defaults to internal linkage.** Model array MUST be declared `extern const unsigned char g_model_data[]` for the linker to find it across translation units.
+3. **Mbed Nano 33 BLE USB CDC drops bytes on bulk writes** larger than ~256 B. Host must trickle: 32-byte chunks with 50 ms delay (~0.83 s per 490-byte tensor). Other boards may not need this.
+4. **Nano 33 BLE `setup()` only runs on hardware reset (flash).** DTR toggles do NOT reset it. Boot message is one-shot. **DO NOT toggle DTR in host code** — it confuses USBSerial state and bytes get lost.
+5. **macOS App Nap throttles Python `time.sleep()` when the laptop is locked.** This can stretch the 50 ms inter-chunk delay to seconds, causing the device's read_exact to time out mid-tensor. Always wrap long runs in `caffeinate -dimsu`.
+6. **Always re-flash before starting a benchmark.** Avoids stale device state from prior failed runs. The `--reflash-build-dir` flag automates this.
 
 ## File inventory
 
 ### Firmware
-- `firmware/arduino_nano33/kws_dscnn/kws_dscnn.ino` — Arduino sketch (TFLite interpreter + DWT cycle counter + serial JSON protocol). Currently contains DIAGNOSTIC prints (`{"dbg":"rx",...}` every 500ms while reading input). Strip these once bytes flow.
-- `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.cpp` — model bytes as C array. Symbols use `extern const` so they have external linkage (C++ default is internal — this was a bug fixed earlier).
-- `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.h` — header for the above
-- `firmware/arduino_nano33/kws_dscnn/dscnn_int8.tflite` — local copy of source model (~48 KB)
+- `firmware/arduino_nano33/kws_dscnn/kws_dscnn.ino` — main sketch. Uses `input_buffer[490]` + memcpy pattern. `kBenchRuns=10`, `kReadTimeoutMs=30000`. No diagnostic prints in current build.
+- `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.cpp` — model bytes. `extern const unsigned char g_model_data[] alignas(8)`.
+- `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.h`
+- `firmware/arduino_nano33/kws_dscnn/dscnn_int8.tflite` — source model (~48 KB)
 
-### Host (cross-board, Python)
-- `kws/host/protocol.md` — wire contract between firmware and host runner. **This is what the partner needs** for ESP32 and STM32 firmware.
-- `kws/host/prepare_test_vectors.py` — builds the test vector pack from MFCC cache + TFLite quantization params. One-time.
-- `kws/host/benchmark_serial.py` — drives any conforming board, collects metrics.
+### Host (cross-board)
+- `kws/host/protocol.md` — wire contract. **This is what the partner needs** for STM32 + ESP32 firmware.
+- `kws/host/prepare_test_vectors.py` — one-time, builds the test vector pack.
+- `kws/host/benchmark_serial.py` — drives any conforming board. Supports:
+  - `--reflash-build-dir <dir>` — auto-uploads via arduino-cli before opening serial
+  - `--resume-from <jsonl>` — appends to existing log, skips clips already completed
+  - `--n-samples` (default 20, use 0 for full)
+  - Per-clip `log_f.flush()` — JSONL safe to read mid-run
+  - Cumulative summary on completion
 
-### Test vector pack (already built)
+### Test vector pack
 - `kws/host/test_vectors/test_vectors_int8.npy` — (11005, 490) int8
 - `kws/host/test_vectors/test_labels.npy` — (11005,) int64
 - `kws/host/test_vectors/tflite_reference_preds.npy` — (11005,) int64
-- `kws/host/test_vectors/test_metadata.json` — SHA256 hashes, quant params, source files
-- Python TFLite reference accuracy = **92.70%** on 11,005 samples
+- `kws/host/test_vectors/test_metadata.json` — SHA256 hashes, quant params
+- Python TFLite reference accuracy: **92.70%** on 11,005 samples
 
-## Verified working
-- Compile + flash succeeds
-- Boot message comes through over serial:
-  ```json
-  {"event":"boot","board":"arduino_nano33","model":"dscnn","input_bytes":490,"input_dtype":9,"output_bytes":35,"output_dtype":9,"arena_used":78436,"arena_size":98304,"clock_hz":64000000}
-  ```
-- Followed by `READY`
-- Flash usage: **397 KB (40%)** — AllOpsResolver is most of it
-- RAM usage: 150 KB (57%) — 96 KB tensor arena + Mbed-OS overhead
-- Peak arena used: **78 KB** ← this is the Paper 1 RAM metric
+### Results so far
+- Latest smoke: `kws/host/results/unknown_dscnn_20260530_201808.jsonl` (+ summary.json)
 
-## Open issue at handoff
+## Known issues / TODO
 
-Host→device direction: Python writes 490 INT8 bytes after seeing `READY`, but the firmware never reports receiving them (no `{"dbg":"rx",...}` progress prints). User noted the **Arduino was physically disconnected** at some point during testing — this likely explains the missing bytes. **Reconnect and retest from step 1 below.**
-
-If retest still fails:
-- Read `firmware/arduino_nano33/kws_dscnn/kws_dscnn.ino` — current diagnostic version logs rx-progress every 500 ms
-- The diagnostic firmware needs to be re-built and flashed (the version on the board may be stale)
+| Item | Priority | Effort | Notes |
+|---|---|---|---|
+| Switch AllOpsResolver → MicroMutableOpResolver with CMSIS-NN | HIGH (Paper) | ~30 min | Brings latency from 1146 ms → ~100 ms, flash 397 KB → ~150 KB. **Required for credible paper numbers.** |
+| Bump post-reflash sleep from 2 s → 3 s | LOW | trivial | Boot message sometimes missed → `arena_used_kb` shows 0 in summary. Cosmetic. |
+| Train TC-ResNet8 + GRU-48 + repeat pipeline | MED | days | Two more rows of the headline table. |
+| Hand `protocol.md` + test vectors + reference sketch to partner | MED | minutes | Unblocks partner's STM32 + ESP32 implementation. |
 
 ## How to resume
 
+### Quick health check (1 minute)
 ```bash
-# 1. Confirm board is connected
 sudo -u rohini -i arduino-cli board list
 # Expect: /dev/cu.usbmodem14101  Arduino Nano 33 BLE  arduino:mbed_nano:nano33ble
+```
 
-# 2. Re-flash the current (diagnostic) firmware
-rm -rf /tmp/arduino_build
-sudo -u rohini env TMPDIR=/tmp HOME=/Users/rohini arduino-cli compile \
-    --fqbn arduino:mbed_nano:nano33ble \
-    --build-path /tmp/arduino_build \
-    /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/arduino_nano33/kws_dscnn
-
-sudo -u rohini env TMPDIR=/tmp HOME=/Users/rohini arduino-cli upload \
-    --fqbn arduino:mbed_nano:nano33ble \
-    --port /dev/cu.usbmodem14101 \
-    --input-dir /tmp/arduino_build \
-    /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/arduino_nano33/kws_dscnn
-
-# 3. Send one tensor and watch progress
-sudo -u rohini env HOME=/Users/rohini python3 -u -c "
-import serial, time, numpy as np
-s = serial.Serial('/dev/cu.usbmodem14101', 115200, timeout=15)
-time.sleep(1.5)
-for _ in range(3):
-    line = s.readline()
-    if not line: break
-    print('rx:', line.decode().rstrip())
-vec = np.load('/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/test_vectors/test_vectors_int8.npy')[0]
-s.write(vec.tobytes()); s.flush()
-deadline = time.time() + 30
-while time.time() < deadline:
-    line = s.readline()
-    if not line: continue
-    print('rx:', line.decode().rstrip())
-    if line.decode().strip() == 'READY': break
-"
-
-# 4. Once roundtrip works, restore kBenchRuns=100 in kws_dscnn.ino, strip the {"dbg":...} prints, re-flash, then:
-sudo -u rohini env HOME=/Users/rohini python3 -u \
+### 20-sample smoke test (4 minutes, auto-reflash, validates green state)
+```bash
+sudo caffeinate -dimsu sudo -u rohini env HOME=/Users/rohini python3 -u \
     /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/benchmark_serial.py \
     --port /dev/cu.usbmodem14101 \
     --vectors-dir /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/test_vectors \
     --results-dir /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results \
-    --n-samples 20
+    --n-samples 20 \
+    --reflash-build-dir /tmp/arduino_build
 ```
 
-## Bugs hit and how they were fixed
+### Resume an interrupted run
+```bash
+# Same command as above, plus:
+    --resume-from /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results/<prior_log>.jsonl
+```
+
+### For long runs (500+ samples), prevent laptop sleep
+```bash
+# Snapshot current values first
+sudo pmset -g | grep -E "sleep|hibernatemode|standby|powernap|lidwake"
+
+# Disable
+sudo pmset -a sleep 0 displaysleep 0 disksleep 0
+
+# Restore afterwards (defaults seen on this machine)
+sudo pmset -a sleep 1 displaysleep 10 disksleep 10
+```
+
+Default `pmset` values on this machine (captured 2026-05-31):
+- `sleep 1, displaysleep 10, disksleep 10, hibernatemode 3, powernap 1, standby 1, lidwake 1`
+
+### Wrap long runs in nohup (survives terminal close)
+```bash
+sudo nohup caffeinate -dimsu sudo -u rohini env HOME=/Users/rohini python3 -u \
+    /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/benchmark_serial.py \
+    ... > /tmp/run.log 2>&1 &
+```
+
+## Bugs hit and how each was fixed
+
 1. **Homebrew refused to run as root** → use `sudo -u rohini -i brew install ...`
 2. **arduino-cli `ctags: cannot open temporary file`** → pass `TMPDIR=/tmp HOME=/Users/rohini` explicitly
-3. **Linker: `undefined reference to g_model_data`** → C++ defaults `const` at namespace scope to internal linkage. Add `extern` keyword to the array definition in `dscnn_model_data.cpp`.
-4. **`allocate_tensors_failed`** → 50 KB arena too small. Bumped to 96 KB. Actual usage: 78 KB.
-5. **Missing boot message on reconnect** → Nano 33 BLE has no USB-to-serial chip; `setup()` only runs on hardware reset (flash). Host runner now tolerates missed boot.
-6. **`PermissionError` writing to `kws/host/test_vectors/`** → directory had been created by root earlier; `chown -R rohini:staff` fixed it.
+3. **Linker: undefined reference to `g_model_data`** → add `extern` to the array definition (C++ internal linkage default)
+4. **`allocate_tensors_failed`** → bumped arena from 50 → 96 KB (actual usage: 78 KB)
+5. **`PermissionError` writing to `kws/host/test_vectors/`** → `chown -R rohini:staff`
+6. **Bytes lost on 490-byte bulk write** → chunked 32 B / 50 ms (Mbed USB CDC quirk)
+7. **All-class-29 predictions** → TFLite Micro arena reuses input; added static `input_buffer[490]` + memcpy before each Invoke
+8. **Mid-clip silent corruption on resume** → added `--reflash-build-dir` for guaranteed clean device state
+9. **App Nap during locked laptop** → wrap commands in `caffeinate -dimsu`, run on AC power
 
-## Task tracker (in-session)
+## Decisions worth remembering
+- No Docker for embedded dev (USB passthrough on Mac is painful; arduino-cli is self-contained)
+- arduino-cli over Arduino IDE / PlatformIO (scriptable, reviewer-friendly)
+- Chirale_TensorFLowLite over the ArduTFLite wrapper (need direct arena control for RAM metrics)
+- AllOpsResolver for now (works, but slow) → MicroMutableOpResolver is the optimization
+- Skip `board_hal.h` until 2nd board lands (rule of three — premature abstraction with one impl)
+- `protocol.md` IS the cross-board contract; `board_hal.h` would be internal-only
+
+## What the partner needs (handoff bundle)
+1. `kws/host/protocol.md` — the spec
+2. `kws/host/test_vectors/*.npy` + `test_metadata.json` — identical byte stream for all boards
+3. `kws/host/benchmark_serial.py` — same script drives all 3 boards (just change `--port`)
+4. `to_rohini/dscnn_int8.tflite` (for ESP32 TFLite Micro) + `to_rohini/dscnn_int8.onnx` (for STM32 Cube.AI)
+5. `firmware/arduino_nano33/kws_dscnn/` as reference implementation
+6. This HANDOFF.md so they don't re-discover the 9 bugs listed above
+
+## In-session task tracker
 1. ✅ Install arduino-cli + Nano 33 BLE core
 2. ✅ Install TFLite Micro library
 3. ✅ Convert .tflite → C array
 4. ✅ Write Arduino sketch
 5. ✅ Compile and flash
-6. 🟡 Write Python host runner — scripts written, but end-to-end roundtrip not yet verified
-7. ⬜ Run benchmark and validate accuracy
+6. ✅ Write Python host runner (with reflash + resume)
+7. ✅ Run 20-sample smoke test (95% MCU accuracy = TFLite ref, 100% agreement)
 
-## Decisions worth remembering
-- **No Docker** for embedded dev (USB passthrough painful on Mac; arduino-cli already self-contained)
-- **arduino-cli over Arduino IDE/PlatformIO** (scriptable, reviewer-friendly, same toolchain as IDE)
-- **Chirale_TensorFLowLite** (maintained TFLite Micro fork) over `ArduTFLite` wrapper (need direct arena control for RAM metrics)
-- **AllOpsResolver** for now; switch to `MicroMutableOpResolver` later to reclaim ~200 KB flash
-- **Skip `board_hal.h` until 2nd board lands** — premature abstraction with only one implementation
-- **`protocol.md` is the cross-board contract**, not the HAL — protocol is what the partner needs to mirror in STM32/ESP32 firmware
-
-## What the partner needs from this work
-- `kws/host/protocol.md` (cross-board firmware contract)
-- `kws/host/test_vectors/*.npy` + `test_metadata.json` (identical INT8 byte stream for all boards)
-- A copy of the Arduino sketch as reference implementation
+Next:
+- Optimize: AllOpsResolver → MicroMutableOpResolver + CMSIS-NN (Paper-quality latency)
+- 500-sample subset for stable accuracy estimate
+- Full 11,005-sample run for paper numbers
+- Hand off to partner

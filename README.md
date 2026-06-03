@@ -22,11 +22,11 @@ Part of the TinyBench series — Paper 1.
 
 | Model | Params | Float32 acc | INT8 acc | INT8 ONNX | TFLite INT8 |
 |---|---|---|---|---|---|
-| DS-CNN-M | 25,251 | 92.71% | 92.69% | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
+| DS-CNN-M | 25,251 | 92.71% | 92.70% | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
 | TC-ResNet8 | ~66K | TBD | TBD | `tcresnet_int8.onnx` | `tcresnet_int8.tflite` |
 | GRU-48 | ~10K | TBD | TBD | `gru_int8.onnx` | `gru_int8.tflite` |
 
-Model files are in `kws/checkpoints/` after training + quantization.
+Model files are in `kws/checkpoints/` after training + quantization. The current INT8 artifacts for firmware deployment (`dscnn_int8.tflite`, `dscnn_int8.onnx`, `mfcc_config.json`) are also mirrored in `to_rohini/` as a partner-handoff folder. **Arduino Nano 33 BLE deployment status and gotchas: see `firmware/arduino_nano33/HANDOFF.md`. Cross-board firmware contract: see `kws/host/protocol.md`. Current research plan: see `../tinybench_research_plan_updated.md`.**
 
 ---
 

@@ -1,0 +1,21 @@
+{
+  "board": "arduino_nano33",
+  "n_target": 500,
+  "n_completed_cumulative": 500,
+  "n_failed_cumulative": 0,
+  "session_ran": 500,
+  "session_failed": 0,
+  "mcu_accuracy": 0.916,
+  "mcu_tflite_agreement": 0.986,
+  "latency_ms": {
+    "median": 1144.49055,
+    "p50": 1144.49055,
+    "p95": 1145.411845,
+    "p99": 1145.4580030000002,
+    "min": 1142.2493,
+    "max": 1145.5151
+  },
+  "arena_used_kb": 76.59765625,
+  "session_wall_clock_s": 978.8417110443115,
+  "log_path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results/arduino_nano33_dscnn_20260602_075223.jsonl"
+}
