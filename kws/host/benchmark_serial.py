@@ -155,9 +155,11 @@ def main():
         if boot.get('output_bytes') != 35:
             sys.exit(f"firmware output_bytes={boot.get('output_bytes')} mismatch")
         board_tag = args.board_tag or boot.get('board', 'unknown')
+        model_tag = boot.get('model', 'unknown')
     else:
         boot = {}
         board_tag = args.board_tag or 'unknown'
+        model_tag = 'unknown'
 
     completed_indices = set()
     if args.resume_from:
@@ -181,7 +183,7 @@ def main():
     else:
         os.makedirs(args.results_dir, exist_ok=True)
         ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        log_path = os.path.join(args.results_dir, f'{board_tag}_dscnn_{ts}.jsonl')
+        log_path = os.path.join(args.results_dir, f'{board_tag}_{model_tag}_{ts}.jsonl')
         log_f = open(log_path, 'w')
         log_f.write(json.dumps({'event': 'boot', 'data': boot,
                                 'metadata': metadata, 'n_samples': n}) + '\n')

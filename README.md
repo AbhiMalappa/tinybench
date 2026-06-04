@@ -20,11 +20,13 @@ Part of the TinyBench series — Paper 1.
 
 ## Models
 
-| Model | Params | Float32 acc | INT8 acc | INT8 ONNX | TFLite INT8 |
-|---|---|---|---|---|---|
-| DS-CNN-M | 25,251 | 92.71% | 92.70% | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
-| TC-ResNet8 | ~66K | TBD | TBD | `tcresnet_int8.onnx` | `tcresnet_int8.tflite` |
-| GRU-48 | ~10K | TBD | TBD | `gru_int8.onnx` | `gru_int8.tflite` |
+| Model | Params | Float32 acc | INT8 TFLite acc | Arduino MCU acc (n=11,005) | INT8 ONNX | TFLite INT8 |
+|---|---|---|---|---|---|---|
+| DS-CNN-M | 25,251 | 92.71% | 92.70% | **92.15%** ✅ | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
+| TC-ResNet8 | 65,827 | 93.18% | 92.99% | **93.04%** ✅ | `tcresnet_int8.onnx` | `tcresnet_int8.tflite` |
+| GRU-96 | ~34K | 92.62% | 92.52% | ❌ infeasible — see results | `gru_int8.onnx` | `gru_int8.tflite` |
+
+Full benchmark data (latency, RAM, flash, MCU↔TFLite agreement, disagreement analysis): see `../tinybench_kws_results.md`. GRU-96 deployment was blocked by TFLite Micro's per-subgraph buffer-tracking cap on Arduino Nano 33 BLE (840-op unrolled GRU exceeds `max is 101`).
 
 Model files are in `kws/checkpoints/` after training + quantization. The current INT8 artifacts for firmware deployment (`dscnn_int8.tflite`, `dscnn_int8.onnx`, `mfcc_config.json`) are also mirrored in `to_rohini/` as a partner-handoff folder. **Arduino Nano 33 BLE deployment status and gotchas: see `firmware/arduino_nano33/HANDOFF.md`. Cross-board firmware contract: see `kws/host/protocol.md`. Current research plan: see `../tinybench_research_plan_updated.md`.**
 

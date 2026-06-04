@@ -132,6 +132,7 @@ sudo nohup caffeinate -dimsu sudo -u rohini env HOME=/Users/rohini python3 -u \
 7. **All-class-29 predictions** → TFLite Micro arena reuses input; added static `input_buffer[490]` + memcpy before each Invoke
 8. **Mid-clip silent corruption on resume** → added `--reflash-build-dir` for guaranteed clean device state
 9. **App Nap during locked laptop** → wrap commands in `caffeinate -dimsu`, run on AC power
+10. **GRU-96 deployment blocked by TFLite Micro buffer cap** → 840-op unrolled GRU exceeds the per-subgraph buffer-tracking limit (`max is 101`). `AllocateTensors()` fails regardless of arena size. CNNs (DS-CNN ~12 ops, TC-ResNet8 ~28 ops) are unaffected. Documented in `tinybench_kws_results.md` as a paper finding; not pursued via library patch.
 
 ## Decisions worth remembering
 - No Docker for embedded dev (USB passthrough on Mac is painful; arduino-cli is self-contained)
@@ -157,9 +158,13 @@ sudo nohup caffeinate -dimsu sudo -u rohini env HOME=/Users/rohini python3 -u \
 5. ✅ Compile and flash
 6. ✅ Write Python host runner (with reflash + resume)
 7. ✅ Run 20-sample smoke test (95% MCU accuracy = TFLite ref, 100% agreement)
+8. ✅ Optimize AllOpsResolver → MicroMutableOpResolver (flash 397→210 KB; latency unchanged since CMSIS-NN was already engaged)
+9. ✅ Full 11K paper run for DS-CNN (92.15% MCU acc, 97.70% agreement, 1144 ms p50, 0 failures over 6h)
+10. ✅ Train + deploy + 11K paper run for TC-ResNet8 (93.04% MCU acc, 99.06% agreement, 76 ms p50 — 15× faster than DS-CNN)
+11. ✅ Train GRU-96 (float32 92.62%, INT8 92.52%)
+12. ❌ Deploy GRU-96 to Arduino — infeasible on stock TFLite Micro (buffer-tracking cap; paper finding documented)
 
 Next:
-- Optimize: AllOpsResolver → MicroMutableOpResolver + CMSIS-NN (Paper-quality latency)
-- 500-sample subset for stable accuracy estimate
-- Full 11,005-sample run for paper numbers
-- Hand off to partner
+- Hand off bundle to partner (protocol.md + test vector packs + sketches as reference)
+- Partner: STM32N6 + ESP32 deployment for all three models (GRU-96 on STM32N6 is the most interesting cell — Arduino infeasibility makes the cross-board contrast sharper)
+- Start drafting the paper (2 of 12 headline cells filled, GRU-96 infeasibility = paper-worthy finding)

@@ -81,17 +81,22 @@ def main():
     print(f"  input  dtype={in_det['dtype'].__name__:>6}  scale={in_scale:.6f}  zp={in_zp}")
     print(f"  output dtype={out_det['dtype'].__name__:>6}  scale={out_scale:.6f}  zp={out_zp}")
     assert in_det['dtype'] == np.int8, "expected INT8 input"
-    assert tuple(in_det['shape']) == (1, n_frames, n_mfcc, 1), in_det['shape']
+    # Accept any input shape whose total size matches n_frames * n_mfcc bytes.
+    # DS-CNN uses (1,49,10,1) NHWC; TC-ResNet8 uses (1,49,10) 3D; bytes are identical.
+    model_input_shape = tuple(in_det['shape'])
+    assert int(np.prod(model_input_shape)) == n_frames * n_mfcc, \
+        f"input size mismatch: model expects {model_input_shape} ({np.prod(model_input_shape)} elements) but config implies {n_frames * n_mfcc}"
 
     print(f"Quantizing {n_samples} feature tensors to INT8...")
     q = np.clip(np.round(feats_norm / in_scale + in_zp), -128, 127).astype(np.int8)
     vectors = q.reshape(n_samples, n_frames * n_mfcc)
     assert vectors.shape == (n_samples, 490)
 
-    print("Running Python TFLite inference for reference predictions...")
+    print(f"Running Python TFLite inference for reference predictions (input shape {model_input_shape})...")
     ref_preds = np.zeros(n_samples, dtype=np.int64)
     for i in range(n_samples):
-        interpreter.set_tensor(in_det['index'], q[i:i+1])
+        sample = vectors[i].reshape(model_input_shape).astype(np.int8)
+        interpreter.set_tensor(in_det['index'], sample)
         interpreter.invoke()
         ref_preds[i] = int(np.argmax(interpreter.get_tensor(out_det['index'])[0]))
         if (i + 1) % 1000 == 0:
