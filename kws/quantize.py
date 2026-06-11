@@ -302,7 +302,7 @@ def main():
         config = json.load(f)
 
     stats_path = os.path.join(args.checkpoints_dir, 'mfcc_stats.pt')
-    _, _, test_loader, _ = get_dataloaders(
+    train_loader, _, test_loader, _ = get_dataloaders(
         args.data_root, args.config,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -321,7 +321,7 @@ def main():
     onnx_kb = export_onnx(model, onnx_path, config['n_mfcc'])
 
     int8_onnx_path = os.path.join(args.checkpoints_dir, f'{args.model}_int8.onnx')
-    int8_onnx_kb = quantize_onnx_int8(onnx_path, int8_onnx_path, test_loader, args.n_calib)
+    int8_onnx_kb = quantize_onnx_int8(onnx_path, int8_onnx_path, train_loader, args.n_calib)
 
     print("Evaluating INT8 ONNX accuracy on test set...")
     int8_onnx_acc = evaluate_int8_onnx(int8_onnx_path, test_loader)
@@ -335,7 +335,7 @@ def main():
         tflite_path = os.path.join(args.checkpoints_dir, f'{args.model}_int8.tflite')
         try:
             tflite_bytes, tflite_kb = convert_to_tflite_int8(
-                onnx_path, tflite_path, test_loader, n_calib=args.n_calib
+                onnx_path, tflite_path, train_loader, n_calib=args.n_calib
             )
             print("Evaluating TFLite accuracy on test set...")
             tflite_acc = evaluate_tflite(tflite_bytes, test_loader)
