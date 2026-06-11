@@ -1,0 +1,4 @@
+## IDF Component Manager manifest for kws_gru
+dependencies:
+  idf: ">=5.0.0"
+  espressif/esp-tflite-micro: "*"

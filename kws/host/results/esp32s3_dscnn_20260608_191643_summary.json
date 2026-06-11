@@ -1,0 +1,21 @@
+{
+  "board": "esp32s3",
+  "n_target": 20,
+  "n_completed_cumulative": 20,
+  "n_failed_cumulative": 0,
+  "session_ran": 20,
+  "session_failed": 0,
+  "mcu_accuracy": 0.95,
+  "mcu_tflite_agreement": 1.0,
+  "latency_ms": {
+    "median": 616.88315,
+    "p50": 616.88315,
+    "p95": 617.234465,
+    "p99": 619.661373,
+    "min": 616.8503,
+    "max": 620.2681
+  },
+  "arena_used_kb": 75.27734375,
+  "session_wall_clock_s": 13.497726917266846,
+  "log_path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results/esp32s3_dscnn_20260608_191643.jsonl"
+}

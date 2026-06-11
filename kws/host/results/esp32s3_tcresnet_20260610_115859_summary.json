@@ -1,0 +1,21 @@
+{
+  "board": "esp32s3",
+  "n_target": 5,
+  "n_completed_cumulative": 5,
+  "n_failed_cumulative": 0,
+  "session_ran": 5,
+  "session_failed": 0,
+  "mcu_accuracy": 1.0,
+  "mcu_tflite_agreement": 0.8,
+  "latency_ms": {
+    "median": 8.7448,
+    "p50": 8.7448,
+    "p95": 8.764380000000001,
+    "p99": 8.767276,
+    "min": 8.7264,
+    "max": 8.768
+  },
+  "arena_used_kb": 49.43359375,
+  "session_wall_clock_s": 0.3309969902038574,
+  "log_path": "./kws/host/results/esp32s3_tcresnet_20260610_115859.jsonl"
+}

@@ -1,0 +1,21 @@
+{
+  "board": "unknown",
+  "n_target": 11005,
+  "n_completed_cumulative": 11004,
+  "n_failed_cumulative": 1,
+  "session_ran": 11004,
+  "session_failed": 1,
+  "mcu_accuracy": 0.925845147219193,
+  "mcu_tflite_agreement": 0.9934569247546347,
+  "latency_ms": {
+    "median": 94.629,
+    "p50": 94.629,
+    "p95": 94.6433,
+    "p99": 94.6476,
+    "min": 94.6048,
+    "max": 94.6573
+  },
+  "arena_used_kb": 0.0,
+  "session_wall_clock_s": 1702.5878429412842,
+  "log_path": "./kws/host/results/unknown_unknown_20260610_112708.jsonl"
+}

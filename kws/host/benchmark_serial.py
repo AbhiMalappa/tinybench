@@ -66,16 +66,17 @@ def wait_for_boot(s, timeout_s=4.0):
 
 
 def write_chunked(s, data, chunk_size=32, delay_s=0.050):
-    """Mbed Nano 33 BLE USB CDC drops bytes on bulk writes. Trickle it in."""
+    """Trickle data in chunks. Mbed USB CDC needs 32B/50ms; UART boards can use larger chunks."""
     for off in range(0, len(data), chunk_size):
         s.write(data[off:off + chunk_size])
         s.flush()
-        time.sleep(delay_s)
+        if delay_s > 0:
+            time.sleep(delay_s)
 
 
-def run_one(s, payload_bytes, response_timeout_s=30.0):
+def run_one(s, payload_bytes, response_timeout_s=30.0, chunk_size=32, chunk_delay=0.050):
     assert len(payload_bytes) == 490
-    write_chunked(s, payload_bytes)
+    write_chunked(s, payload_bytes, chunk_size=chunk_size, delay_s=chunk_delay)
     # The firmware may emit diagnostic lines before the result; the result is
     # whichever line parses to a dict containing a 'class' or 'error' key.
     while True:
@@ -111,6 +112,10 @@ def main():
                              'safety and avoiding stale-state failures from prior runs.')
     parser.add_argument('--fqbn', default='arduino:mbed_nano:nano33ble',
                         help='Board FQBN used when --reflash-build-dir is set.')
+    parser.add_argument('--chunk-size', type=int, default=32,
+                        help='Bytes per chunk when sending tensor (default 32 for Mbed USB CDC).')
+    parser.add_argument('--chunk-delay', type=float, default=0.050,
+                        help='Delay in seconds between chunks (default 0.05 for Mbed USB CDC).')
     args = parser.parse_args()
 
     vec_path = os.path.join(args.vectors_dir, 'test_vectors_int8.npy')
@@ -148,7 +153,7 @@ def main():
     time.sleep(1.5)
 
     print("Waiting for boot...")
-    boot = wait_for_boot(s)
+    boot = wait_for_boot(s, timeout_s=8.0)
     if boot is not None:
         if boot.get('input_bytes') != 490:
             sys.exit(f"firmware input_bytes={boot.get('input_bytes')} mismatch")
@@ -196,7 +201,8 @@ def main():
         if i in completed_indices:
             continue
         try:
-            r = run_one(s, vectors[i].tobytes())
+            r = run_one(s, vectors[i].tobytes(),
+                        chunk_size=args.chunk_size, chunk_delay=args.chunk_delay)
         except Exception as e:
             session_failures += 1
             print(f"  [{i+1}/{n}] FAILED: {e}")

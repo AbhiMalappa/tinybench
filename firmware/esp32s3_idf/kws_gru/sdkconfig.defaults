@@ -1,0 +1,20 @@
+# ESP32-S3-DevKitC-1 N8R8 defaults for TinyBench-KWS GRU-96
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+
+# Custom partition table for 2 MB app (GRU binary ~1.1 MB)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Route IDF console/logs to USB-JTAG so UART0 is free for uart_driver_install
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# Keep UART0 at 115200 for the benchmark protocol
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# Increase UART RX buffer for 490-byte input tensors
+CONFIG_UART_ISR_IN_IRAM=y
+
+# esp-tflite-micro: enable esp-nn Xtensa LX7 SIMD kernels
+CONFIG_TFLITE_USE_ESP_NN=y
