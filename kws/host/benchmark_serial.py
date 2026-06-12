@@ -74,8 +74,9 @@ def write_chunked(s, data, chunk_size=32, delay_s=0.050):
             time.sleep(delay_s)
 
 
-def run_one(s, payload_bytes, response_timeout_s=30.0, chunk_size=32, chunk_delay=0.050):
-    assert len(payload_bytes) == 490
+def run_one(s, payload_bytes, expected_bytes, response_timeout_s=30.0, chunk_size=32, chunk_delay=0.050):
+    assert len(payload_bytes) == expected_bytes, \
+        f"payload length {len(payload_bytes)} != expected {expected_bytes}"
     write_chunked(s, payload_bytes, chunk_size=chunk_size, delay_s=chunk_delay)
     # The firmware may emit diagnostic lines before the result; the result is
     # whichever line parses to a dict containing a 'class' or 'error' key.
@@ -96,6 +97,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', required=True)
     parser.add_argument('--baud', type=int, default=115200)
+    parser.add_argument('--model', default='dscnn', choices=['dscnn', 'tcresnet', 'gru'],
+                        help='Model being benchmarked — selects the correct test vectors and reference predictions')
+    parser.add_argument('--backend', default='tflite', choices=['tflite', 'onnx'],
+                        help='tflite = Arduino/ESP32 (INT8 vectors); onnx = STM32/Cube.AI (float32 vectors)')
     parser.add_argument('--vectors-dir', default='./kws/host/test_vectors')
     parser.add_argument('--n-samples', type=int, default=20,
                         help='How many test vectors to send (use 0 for all)')
@@ -118,23 +123,33 @@ def main():
                         help='Delay in seconds between chunks (default 0.05 for Mbed USB CDC).')
     args = parser.parse_args()
 
-    vec_path = os.path.join(args.vectors_dir, 'test_vectors_int8.npy')
-    lbl_path = os.path.join(args.vectors_dir, 'test_labels.npy')
-    ref_path = os.path.join(args.vectors_dir, 'tflite_reference_preds.npy')
-    meta_path = os.path.join(args.vectors_dir, 'test_metadata.json')
+    if args.backend == 'tflite':
+        vec_path = os.path.join(args.vectors_dir, f'test_vectors_int8_{args.model}.npy')
+    else:
+        vec_path = os.path.join(args.vectors_dir, 'test_vectors_float32.npy')
+    lbl_path  = os.path.join(args.vectors_dir, 'test_labels.npy')
+    ref_path  = os.path.join(args.vectors_dir, f'ref_preds_{args.model}_{args.backend}.npy')
+    meta_path = os.path.join(args.vectors_dir, f'test_metadata_{args.model}_{args.backend}.json')
+
+    for p in (vec_path, lbl_path, ref_path, meta_path):
+        if not os.path.exists(p):
+            sys.exit(f"Missing test vector file: {p}\n"
+                     f"Run: python kws/host/prepare_test_vectors.py --model {args.model} --backend {args.backend}")
 
     vectors = np.load(vec_path)
-    labels = np.load(lbl_path)
+    labels  = np.load(lbl_path)
     ref_preds = np.load(ref_path)
     with open(meta_path) as f:
         metadata = json.load(f)
 
-    assert vectors.dtype == np.int8 and vectors.shape[1] == 490, vectors.shape
+    expected_bytes = metadata['input_bytes_per_sample']
+    assert vectors.shape[1] * vectors.itemsize == expected_bytes, \
+        f"vector byte width {vectors.shape[1] * vectors.itemsize} != metadata {expected_bytes}"
     n_total = vectors.shape[0]
     n = args.n_samples if args.n_samples > 0 else n_total
     n = min(n, n_total)
     print(f"Vectors:   {vec_path}  ({n_total} total, running {n})")
-    print(f"Reference TFLite accuracy: {metadata['tflite_reference_accuracy']*100:.2f}%")
+    print(f"Reference {args.backend.upper()} accuracy: {metadata['reference_accuracy']*100:.2f}%")
 
     if args.reflash_build_dir:
         print(f"Re-flashing {args.fqbn} from {args.reflash_build_dir}...")
@@ -155,8 +170,8 @@ def main():
     print("Waiting for boot...")
     boot = wait_for_boot(s, timeout_s=8.0)
     if boot is not None:
-        if boot.get('input_bytes') != 490:
-            sys.exit(f"firmware input_bytes={boot.get('input_bytes')} mismatch")
+        if boot.get('input_bytes') != expected_bytes:
+            sys.exit(f"firmware input_bytes={boot.get('input_bytes')} != expected {expected_bytes}")
         if boot.get('output_bytes') != 35:
             sys.exit(f"firmware output_bytes={boot.get('output_bytes')} mismatch")
         board_tag = args.board_tag or boot.get('board', 'unknown')
@@ -201,7 +216,7 @@ def main():
         if i in completed_indices:
             continue
         try:
-            r = run_one(s, vectors[i].tobytes(),
+            r = run_one(s, vectors[i].tobytes(), expected_bytes,
                         chunk_size=args.chunk_size, chunk_delay=args.chunk_delay)
         except Exception as e:
             session_failures += 1
@@ -224,7 +239,7 @@ def main():
 
         if session_ran % 10 == 0 or session_ran <= 5 or i + 1 == n:
             print(f"  [{i+1}/{n}] pred={r['class']:2d} label={int(labels[i]):2d} "
-                  f"tflite={int(ref_preds[i]):2d}  latency={r['latency_ms']:.2f}ms")
+                  f"ref={int(ref_preds[i]):2d}  latency={r['latency_ms']:.2f}ms")
 
     log_f.close()
     elapsed = time.time() - t_start
@@ -268,7 +283,7 @@ def main():
         'session_ran': session_ran,
         'session_failed': session_failures,
         'mcu_accuracy': cum_correct / n_cum,
-        'mcu_tflite_agreement': cum_agree / n_cum,
+        'mcu_ref_agreement': cum_agree / n_cum,
         'latency_ms': {
             'median': float(np.median(lat)),
             'p50': float(np.percentile(lat, 50)),
@@ -290,7 +305,7 @@ def main():
     print(f"Cumulative completed:        {n_cum}/{n}  ({cum_failed} failed)")
     print(f"This session:                {session_ran} new clips ({session_failures} failed)")
     print(f"MCU accuracy:                {summary['mcu_accuracy']*100:.2f}%")
-    print(f"MCU↔TFLite agreement:        {summary['mcu_tflite_agreement']*100:.2f}%  ← firmware-correctness signal")
+    print(f"MCU↔{args.backend.upper()} agreement:         {summary['mcu_ref_agreement']*100:.2f}%  ← firmware-correctness signal")
     print(f"Latency median:              {summary['latency_ms']['median']:.3f} ms")
     print(f"Latency p95 / p99:           {summary['latency_ms']['p95']:.3f} / {summary['latency_ms']['p99']:.3f} ms")
     print(f"Peak arena RAM:              {summary['arena_used_kb']:.1f} KB")

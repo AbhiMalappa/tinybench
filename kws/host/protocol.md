@@ -44,7 +44,7 @@ Required fields:
 | `event` | `"boot"` | Discriminator |
 | `board` | string | Stable board ID (e.g. `arduino_nano33`, `esp32s3`, `stm32n6`) |
 | `model` | string | Model identifier (e.g. `dscnn`) |
-| `input_bytes` | int | Must equal 490 |
+| `input_bytes` | int | 490 for TFLite INT8; 1960 for ONNX float32 |
 | `input_dtype` | int | TFLite enum; INT8 = 9 |
 | `output_bytes` | int | Must equal 35 |
 | `output_dtype` | int | TFLite enum; INT8 = 9 |
@@ -56,10 +56,13 @@ After the boot line, the firmware MUST emit a single line containing exactly `RE
 
 ## Per-inference exchange
 
-1. Host writes exactly **490 raw INT8 bytes** to the serial port. Order: row-major `(n_frames=49, n_mfcc=10)`. **The host MUST trickle the bytes — Arduino Nano 33 BLE Mbed USB CDC drops bytes on bulk writes >256 B. Reference host implementation uses 32-byte chunks with 50 ms inter-chunk delay (~0.8 s per 490-byte tensor). Boards with deeper RX buffers may accept fewer/faster chunks.**
-2. Firmware reads 490 bytes into the input tensor.
-3. Firmware runs **100 inferences** on the same input, measuring each with a hardware cycle counter (DWT->CYCCNT on Cortex-M; CCOUNT on Xtensa LX7).
-4. Firmware computes the **median** of the 100 cycle counts.
+1. Host writes the input tensor bytes to the serial port. Order: row-major `(n_frames=49, n_mfcc=10)`.
+   - TFLite backend (Arduino, ESP32-S3): **490 INT8 bytes**
+   - ONNX backend (STM32/Cube.AI): **1960 float32 bytes**
+   - **The host MUST trickle the bytes — Arduino Nano 33 BLE Mbed USB CDC drops bytes on bulk writes >256 B. Reference host implementation uses 32-byte chunks with 50 ms inter-chunk delay. Boards with deeper RX buffers may accept fewer/faster chunks.**
+2. Firmware reads the expected bytes into the input tensor.
+3. Firmware runs **N inferences** on the same input (N is firmware-defined; Arduino=10, ESP32-S3=1, STM32=TBD), measuring each with a hardware cycle counter (DWT->CYCCNT on Cortex-M; CCOUNT on Xtensa LX7).
+4. Firmware computes the **median** of the N cycle counts.
 5. Firmware emits one RESULT line (valid JSON, key `class` present):
 
 ```json
@@ -96,7 +99,15 @@ The host treats any line containing `"error"` at the top level as a clip failure
 - Reported `latency_ms` is the **median over 100 runs of the same input tensor**.
 
 ## Test vectors
-- Identical byte stream consumed by every board: `kws/host/test_vectors/test_vectors_int8.npy`.
-- Identical ground-truth labels: `kws/host/test_vectors/test_labels.npy`.
-- Manifest with byte stream and source-model hashes: `kws/host/test_vectors/test_metadata.json`.
-- Reviewers verify reproducibility by SHA256 of the `.npy` files.
+
+Generate with `kws/host/prepare_test_vectors.py --model <model> --backend <tflite|onnx>` before benchmarking.
+
+| File | Contents | Backend |
+|---|---|---|
+| `test_labels.npy` | (N,) int64 ground-truth — shared across all runs | all |
+| `test_vectors_int8_{model}.npy` | (N, 490) int8 — quantized with model's TFLite input scale/zp | tflite |
+| `test_vectors_float32.npy` | (N, 490) float32 — normalized MFCC, Cube.AI handles quantization | onnx |
+| `ref_preds_{model}_{backend}.npy` | (N,) int64 — host reference predictions | per model+backend |
+| `test_metadata_{model}_{backend}.json` | quant params, SHA256 hashes, reference accuracy | per model+backend |
+
+Reviewers verify reproducibility by SHA256 of the `.npy` files (recorded in `test_metadata_{model}_{backend}.json`).

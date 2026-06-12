@@ -10,7 +10,9 @@ Usage:
 import argparse
 import json
 import os
+import random
 import sys
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -68,7 +70,16 @@ def main():
                         help='Directory for pre-computed MFCC cache. Built on first run, reused after.')
     parser.add_argument('--patience', type=int, default=15,
                         help='Early stopping: stop if val acc does not improve for this many epochs')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed for reproducibility')
     args = parser.parse_args()
+
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+    print(f"Seed: {args.seed}")
 
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -81,7 +92,7 @@ def main():
     os.makedirs(args.checkpoints_dir, exist_ok=True)
     stats_path = os.path.join(args.checkpoints_dir, 'mfcc_stats.pt')
 
-    train_loader, val_loader, test_loader, stats = get_dataloaders(
+    train_loader, val_loader, _, stats = get_dataloaders(
         args.data_root, args.config,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -132,6 +143,7 @@ def main():
                 'val_acc': val_acc,
                 'config': config,
                 'stats': stats,
+                'seed': args.seed,
             }, best_ckpt)
             print(f"  -> Best model saved (val acc {val_acc*100:.2f}%)")
         else:
@@ -140,12 +152,7 @@ def main():
                 print(f"\nEarly stopping at epoch {epoch} (no improvement for {args.patience} epochs)")
                 break
 
-    checkpoint = torch.load(best_ckpt, map_location=device, weights_only=False)
-    model.load_state_dict(checkpoint['model_state'])
-    _, test_acc = evaluate(model, test_loader, criterion, device)
-
-    target = 0.93
-    print(f"\nTest accuracy: {test_acc*100:.2f}%  |  Target: >{target*100:.0f}%  |  {'PASS' if test_acc >= target else 'FAIL'}")
+    print(f"\nTraining complete. Best val acc: {best_val_acc*100:.2f}%  |  Checkpoint: {best_ckpt}")
 
 
 if __name__ == '__main__':

@@ -58,11 +58,15 @@ tinybench/
 ```bash
 pip install -r requirements.txt
 
-# Train
-python kws/train.py --model dscnn --cache-dir ./data/mfcc_cache
+# Train (seed=42 default; checkpoint selected on val accuracy)
+python kws/train.py --model dscnn --cache-dir ./mfcc_cache
 
-# Quantize (produces INT8 ONNX + TFLite INT8)
-python kws/quantize.py --model dscnn --cache-dir ./data/mfcc_cache
+# Quantize (calibration uses training split; produces INT8 ONNX + TFLite INT8)
+python kws/quantize.py --model dscnn --cache-dir ./mfcc_cache
+
+# Build test vectors (run once per model × backend before benchmarking)
+python kws/host/prepare_test_vectors.py --model dscnn --backend tflite  # Arduino / ESP32-S3
+python kws/host/prepare_test_vectors.py --model dscnn --backend onnx    # STM32 / Cube.AI
 ```
 
 ---
@@ -150,16 +154,17 @@ int   hal_get_ram_used_kb();
 | ESP32-S3 | CCOUNT register | `xthal_get_ccount() / 240e6 * 1000` |
 | Arduino Nano 33 | DWT cycle counter | Same as STM32, `SystemCoreClock = 64e6` |
 
-**Latency definition:** median of 100 inference runs on the same input tensor.
+**Latency definition:** median of N inference runs on the same input tensor (N is firmware-defined: Arduino=10, ESP32-S3=1, STM32=TBD). Single-run variance on ESP32-S3 is <0.1 ms so N=1 is sufficient there.
 
 ---
 
 ## Measurement checklist
 
-- [ ] Same INT8 model binary on all boards
-- [ ] MFCC computed on host (Python), INT8 tensors sent over UART — no mic needed
-- [ ] Latency = median of 100 runs per sample
-- [ ] RAM = peak activation memory (Cube.AI reports at compile time; TFLite Micro: arena size)
-- [ ] Flash = model binary size in bytes (`.tflite` file size)
+- [ ] Correct model format per board: `.tflite` for Arduino/ESP32-S3; `.onnx` for STM32/Cube.AI
+- [ ] Test vectors generated per model+backend (`prepare_test_vectors.py --model X --backend Y`)
+- [ ] MFCC computed on host (Python), tensors sent over UART — no mic needed
+- [ ] Latency = median of N runs per sample (N per firmware: Arduino=10, ESP32-S3=1, STM32=TBD)
+- [ ] RAM = peak activation memory (Cube.AI reports at compile time; TFLite Micro: arena_used from boot JSON)
+- [ ] Flash = model binary size in bytes
 - [ ] STM32N6: run each model with NPU ON and NPU OFF, report both
 - [ ] All 3 models on all 3 boards before writing results table
