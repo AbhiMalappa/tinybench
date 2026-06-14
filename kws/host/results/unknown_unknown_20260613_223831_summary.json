@@ -1,0 +1,21 @@
+{
+  "board": "unknown",
+  "n_target": 5,
+  "n_completed_cumulative": 5,
+  "n_failed_cumulative": 0,
+  "session_ran": 5,
+  "session_failed": 0,
+  "mcu_accuracy": 1.0,
+  "mcu_ref_agreement": 1.0,
+  "latency_ms": {
+    "median": 194.2844,
+    "p50": 194.2844,
+    "p95": 194.36656,
+    "p99": 194.373952,
+    "min": 194.1292,
+    "max": 194.3758
+  },
+  "arena_used_kb": 0.0,
+  "session_wall_clock_s": 1.8786461353302002,
+  "log_path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results/unknown_unknown_20260613_223831.jsonl"
+}

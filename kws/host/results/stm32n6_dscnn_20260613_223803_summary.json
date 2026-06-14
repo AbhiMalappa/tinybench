@@ -1,0 +1,21 @@
+{
+  "board": "stm32n6",
+  "n_target": 5,
+  "n_completed_cumulative": 5,
+  "n_failed_cumulative": 0,
+  "session_ran": 5,
+  "session_failed": 0,
+  "mcu_accuracy": 0.8,
+  "mcu_ref_agreement": 1.0,
+  "latency_ms": {
+    "median": 249.2919,
+    "p50": 249.2919,
+    "p95": 249.30054,
+    "p99": 249.30082800000002,
+    "min": 249.2894,
+    "max": 249.3009
+  },
+  "arena_used_kb": 137.75,
+  "session_wall_clock_s": 2.155492067337036,
+  "log_path": "/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/kws/host/results/stm32n6_dscnn_20260613_223803.jsonl"
+}

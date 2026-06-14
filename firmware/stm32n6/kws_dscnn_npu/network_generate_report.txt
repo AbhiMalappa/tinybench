@@ -1,0 +1,146 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2026-06-13 12:20:38
+Parameters            : generate --target stm32n6 --name network --model /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/checkpoints/dscnn_int8_v17.onnx --output /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_dscnn_npu/ --st-neural-art profile-default
+
+Model name - dscnn_int8_v17
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+m_id   layer (original)                                    oshape                 param/size            macc                     connected to 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+0      mfcc ()                                             [b:1,h:49,w:10,c:1]                                                                
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+1      classifier_bias_const (DequantizeLinear)            [b:35]                 35/140                                                      
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+2      classifier_weight_..tput_const (DequantizeLinear)   [b:35,c:64]            2,240/8,960                                                 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+19     mfcc_QuantizeLinear_Output (QuantizeLinear)         [b:1,h:49,w:10,c:1]                           980                             mfcc 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+22     mfcc_DequantizeLinear_Output (DequantizeLinear)     [b:1,h:49,w:10,c:1]                           980       mfcc_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+23     relu (Conv)                                         [b:1,h:50,w:11,c:64]   2,624/10,496     1,408,064     mfcc_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+24     relu_QuantizeLinear_Output (QuantizeLinear)         [b:1,h:50,w:11,c:64]                       70,400                             relu 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+25     relu_DequantizeLinear_Output (DequantizeLinear)     [b:1,h:50,w:11,c:64]                       70,400       relu_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+26     relu_1 (Conv)                                       [b:1,h:50,w:11,c:64]   640/2,560          316,864     relu_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+27     relu_1_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_1 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+28     relu_1_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_1_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+29     relu_2 (Conv)                                       [b:1,h:50,w:11,c:64]   4,160/16,640     2,252,864   relu_1_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+30     relu_2_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_2 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+31     relu_2_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_2_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+32     relu_3 (Conv)                                       [b:1,h:50,w:11,c:64]   640/2,560          316,864   relu_2_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+33     relu_3_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_3 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+34     relu_3_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_3_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+35     relu_4 (Conv)                                       [b:1,h:50,w:11,c:64]   4,160/16,640     2,252,864   relu_3_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+36     relu_4_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_4 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+37     relu_4_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_4_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+38     relu_5 (Conv)                                       [b:1,h:50,w:11,c:64]   640/2,560          316,864   relu_4_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+39     relu_5_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_5 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+40     relu_5_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_5_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+41     relu_6 (Conv)                                       [b:1,h:50,w:11,c:64]   4,160/16,640     2,252,864   relu_5_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+42     relu_6_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_6 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+43     relu_6_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_6_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+44     relu_7 (Conv)                                       [b:1,h:50,w:11,c:64]   640/2,560          316,864   relu_6_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+45     relu_7_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_7 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+46     relu_7_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_7_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+47     relu_8 (Conv)                                       [b:1,h:50,w:11,c:64]   4,160/16,640     2,252,864   relu_7_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+48     relu_8_QuantizeLinear_Output (QuantizeLinear)       [b:1,h:50,w:11,c:64]                       70,400                           relu_8 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+49     relu_8_DequantizeLinear_Output (DequantizeLinear)   [b:1,h:50,w:11,c:64]                       70,400     relu_8_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+50     mean (ReduceMean)                                   [b:1,h:1,w:1,c:64]                         70,400   relu_8_DequantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+51     view (Reshape)                                      [b:1,c:64]                                                                    mean 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+52     view_QuantizeLinear_Output (QuantizeLinear)         [b:1,c:64]                                    128                             view 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+53     view_DequantizeLinear_Output (DequantizeLinear)     [b:1,c:64]                                    128       view_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+54     logits_QuantizeLinear_Input (Gemm)                  [b:1,c:35]                                  2,275     view_DequantizeLinear_Output 
+                                                                                                               classifier_weight_..tput_const 
+                                                                                                                        classifier_bias_const 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+55     logits_QuantizeLinear_Output (QuantizeLinear)       [b:1,c:35]                                     70      logits_QuantizeLinear_Input 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+56     logits (DequantizeLinear)                           [b:1,c:35]                                     70     logits_QuantizeLinear_Output 
+------ --------------------------------------------------- ---------------------- -------------- ----------- -------------------------------- 
+model: macc=13,029,207 weights=96,396 activations=-- io=--
+
+
+
+
+
+Compilation details
+------------------------------------------------------------------------------------
+Compiler version: 1.1.1-14
+Compiler arguments:  -i /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_dscnn_npu/dscnn_int8_v17_OE_3_3_0.onnx --json-quant-file /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_dscnn_npu/dscnn_int8_v17_OE_3_3_0_Q.json -g network.c --load-mdesc /Users/rohini/Downloads/stedgeai/Utilities/configs/stm32n6.mdesc --load-mpool /Users/rohini/Downloads/stedgeai/Utilities/mac/targets/stm32/resources/mpools/stm32n6.mpool --save-mpool-file /Users/rohini/Desktop/Abhiraj/tiny_bench_research/st_ai_ws/neural_art__network/stm32n6.mpool --out-dir-prefix /Users/rohini/Desktop/Abhiraj/tiny_bench_research/st_ai_ws/neural_art__network/ --native-float --mvei --cache-maintenance --Ocache-opt --enable-virtual-mem-pools --Os --Oauto-sched --output-info-file c_info.json
+====================================================================================
+
+Memory usage information  (input/output buffers are included in activations)
+------------------------------------------------------------------------------------
+	flexMEM    [0x34000000 - 0x34000000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM1    [0x34064000 - 0x34064000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM2    [0x34100000 - 0x34200000]:          0  B /      1.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM3    [0x34200000 - 0x34270000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM4    [0x34270000 - 0x342E0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM5    [0x342E0000 - 0x34350000]:    344.234 kB /    448.000 kB  ( 76.84 % used) -- weights:          0  B (  0.00 % used)  activations:    344.234 kB ( 76.84 % used)
+	npuRAM6    [0x34350000 - 0x343C0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	octoFlash  [0x71000000 - 0x78000000]:     42.485 kB /    112.000 MB  (  0.04 % used) -- weights:     42.485 kB (  0.04 % used)  activations:          0  B (  0.00 % used)
+	hyperRAM   [0x90000000 - 0x92000000]:          0  B /     32.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+---
+Total:                                           386.720 kB                                  -- weights:     42.485 kB                  activations:    344.234 kB                   
+====================================================================================
+
+
+Used memory ranges
+------------------------------------------------------------------------------------
+	npuRAM5    [0x342E0000 - 0x34350000]: 0x342E0000-0x343360F0
+	octoFlash  [0x71000000 - 0x78000000]: 0x71000000-0x7100AA00
+====================================================================================
+
+Epochs details
+------------------------------------------------------------------------------------
+Total number of epochs: 18 of which 3 implemented in software
+---
+epoch ID   HW/SW/EC Operation (SW only)
+epoch 1       HW    
+epoch 2       HW    
+epoch 3       HW    
+epoch 4       HW    
+epoch 5       HW    
+epoch 6       HW    
+epoch 7       HW    
+epoch 8       HW    
+epoch 9       HW    
+epoch 10      HW    
+epoch 11      HW    
+epoch 12      HW    
+epoch 13      HW    
+epoch 14     -SW-   (  DequantizeLinear  )
+epoch 15     -SW-   ( GlobalAveragePool  )
+epoch 16     -SW-   (   QuantizeLinear   )
+epoch 17      HW    
+epoch 18      HW    
+====================================================================================

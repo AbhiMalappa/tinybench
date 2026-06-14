@@ -1,0 +1,415 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2026-06-13 09:41:14
+Parameters            : generate --model /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/checkpoints/tcresnet_int8_v17.onnx --target stm32 --name network --output /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/
+
+Exec/report summary (generate)
+-------------------------------------------------------------------------------------------------------------------------
+model file         :   /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/checkpoints/tcresnet_int8_v17.onnx    
+type               :   onnx                                                                                              
+c_name             :   network                                                                                           
+compression        :   lossless                                                                                          
+options            :   allocate-inputs, allocate-outputs                                                                 
+optimization       :   balanced                                                                                          
+target/series      :   stm32                                                                                             
+workspace dir      :   /Users/rohini/Desktop/Abhiraj/tiny_bench_research/st_ai_ws                                        
+output dir         :   /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu     
+model_fmt          :   sa/sa per tensor                                                                                  
+model_name         :   tcresnet_int8_v17                                                                                 
+model_hash         :   0xbe3178c3bd61ceae34ad51c6f9f354ac                                                                
+params #           :   65,499 items (255.86 KiB)                                                                         
+-------------------------------------------------------------------------------------------------------------------------
+input 1/1          :   'mfcc', f32(1x49x10x1), 1.91 KBytes, activations                                                  
+output 1/1         :   'logits_QuantizeLinear_Input', int8(1x35), 35 Bytes, QLinear(0.040224735,-22,int8), activations   
+macc               :   773,436                                                                                           
+weights (ro)       :   66,588 B (65.03 KiB) (1 segment) / -195,408(-74.6%) vs float model                                
+activations (rw)   :   8,992 B (8.78 KiB) (1 segment) *                                                                  
+ram (total)        :   8,992 B (8.78 KiB) = 8,992 + 0 + 0                                                                
+-------------------------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers are allocated in the activations buffer
+
+Model name - tcresnet_int8_v17
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+m_id   layer (type,original)                                            oshape                param/size           macc                     connected to   | c_size            c_macc            c_type                 
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+0      mfcc (Input, )                                                   [b:1,h:49,w:10,c:1]                                                                |                   +980(+100.0%)     Conversion_[0]         
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+1      classifier_bias_const (Placeholder, DequantizeLinear)            [b:35]                35/140                                                       | -140(-100.0%)                       
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+2      classifier_weight_..tput_const (Placeholder, DequantizeLinear)   [b:35,c:48]           1,680/6,720                                                  | -6,720(-100.0%)                     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+3      _Squeeze_output_0 (Reshape, Squeeze)                             [b:1,h:10,c:49]                                                             mfcc   |                   +245(+100.0%)     Transpose_[1]          
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+24     _Transpose_output_0 (Transpose, Transpose)                       [b:1,h:49,c:10]                             245                _Squeeze_output_0   |                   -245(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+25     _Transpose_output_..ear_Output (Conversion, QuantizeLinear)      [b:1,h:49,c:10]                             980              _Transpose_output_0   |                   -980(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+26     _Transpose_output_..ear_Output (Conversion, DequantizeLinear)    [b:1,h:49,c:10]                             980   _Transpose_output_..ear_Output   |                   -980(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+27     _stem_stem_2_Relu_output_0 (Conv2D, Conv)                        [b:1,h:49,c:16]       1,456/5,824        70,576   _Transpose_output_..ear_Output   | -4,320(-74.2%)                      Pad_/Conv2D_[2, 3]     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+28     _stem_stem_2_Relu_..ear_Output (Conversion, QuantizeLinear)      [b:1,h:49,c:16]                           1,568       _stem_stem_2_Relu_output_0   |                   -1,568(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+29     _stem_stem_2_Relu_..ear_Output (Conversion, DequantizeLinear)    [b:1,h:49,c:16]                           1,568   _stem_stem_2_Relu_..ear_Output   |                   -1,568(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+30     _blocks_blocks_0_m..u_output_0 (Conv2D, Conv)                    [b:1,h:25,c:24]       3,480/13,920       86,424   _stem_stem_2_Relu_..ear_Output   | -10,368(-74.5%)                     Pad_/Conv2D_[4, 5]     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+31     _blocks_blocks_0_s..v_output_0 (Conv2D, Conv)                    [b:1,h:25,c:24]       408/1,632           9,624   _stem_stem_2_Relu_..ear_Output   | -1,152(-70.6%)                      Conv2D_[8]             
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+32     _blocks_blocks_0_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..u_output_0   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+33     _blocks_blocks_0_s..ear_Output (Conversion, QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_s..v_output_0   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+34     _blocks_blocks_0_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..ear_Output   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+35     _blocks_blocks_0_s..ear_Output (Conversion, DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_s..ear_Output   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+36     _blocks_blocks_0_m..v_output_0 (Conv2D, Conv)                    [b:1,h:25,c:24]       5,208/20,832      129,624   _blocks_blocks_0_m..ear_Output   | -15,552(-74.7%)                     Pad_/Conv2D_[6, 7]     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+37     _blocks_blocks_0_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..v_output_0   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+38     _blocks_blocks_0_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..ear_Output   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+39     _blocks_blocks_0_r..u_output_0 (Eltwise, Add)                    [b:1,h:25,c:24]                             600   _blocks_blocks_0_m..ear_Output   |                                     Eltwise/add_[9]        
+                                                                                                                          _blocks_blocks_0_s..ear_Output   | 
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+40     _blocks_blocks_0_r..ear_Output (Conversion, QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_r..u_output_0   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+41     _blocks_blocks_0_r..ear_Output (Conversion, DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_r..ear_Output   |                   -1,200(-100.0%)   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+42     _blocks_blocks_1_m..u_output_0 (Conv2D, Conv)                    [b:1,h:13,c:32]       6,944/27,776       89,888   _blocks_blocks_0_r..ear_Output   | -20,736(-74.7%)                     Pad_/Conv2D_[10, 11]   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+43     _blocks_blocks_1_s..v_output_0 (Conv2D, Conv)                    [b:1,h:13,c:32]       800/3,200          10,016   _blocks_blocks_0_r..ear_Output   | -2,304(-72.0%)                      Conv2D_[14]            
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+44     _blocks_blocks_1_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..u_output_0   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+45     _blocks_blocks_1_s..ear_Output (Conversion, QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_s..v_output_0   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+46     _blocks_blocks_1_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..ear_Output   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+47     _blocks_blocks_1_s..ear_Output (Conversion, DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_s..ear_Output   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+48     _blocks_blocks_1_m..v_output_0 (Conv2D, Conv)                    [b:1,h:13,c:32]       9,248/36,992      119,840   _blocks_blocks_1_m..ear_Output   | -27,648(-74.7%)                     Pad_/Conv2D_[12, 13]   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+49     _blocks_blocks_1_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..v_output_0   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+50     _blocks_blocks_1_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..ear_Output   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+51     _blocks_blocks_1_r..u_output_0 (Eltwise, Add)                    [b:1,h:13,c:32]                             416   _blocks_blocks_1_m..ear_Output   |                                     Eltwise/add_[15]       
+                                                                                                                          _blocks_blocks_1_s..ear_Output   | 
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+52     _blocks_blocks_1_r..ear_Output (Conversion, QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_r..u_output_0   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+53     _blocks_blocks_1_r..ear_Output (Conversion, DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_r..ear_Output   |                   -832(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+54     _blocks_blocks_2_m..u_output_0 (Conv2D, Conv)                    [b:1,h:7,c:48]        13,872/55,488      96,816   _blocks_blocks_1_r..ear_Output   | -41,472(-74.7%)                     Pad_/Conv2D_[16, 17]   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+55     _blocks_blocks_2_s..v_output_0 (Conv2D, Conv)                    [b:1,h:7,c:48]        1,584/6,336        10,800   _blocks_blocks_1_r..ear_Output   | -4,608(-72.7%)                      Conv2D_[20]            
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+56     _blocks_blocks_2_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..u_output_0   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+57     _blocks_blocks_2_s..ear_Output (Conversion, QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_s..v_output_0   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+58     _blocks_blocks_2_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..ear_Output   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+59     _blocks_blocks_2_s..ear_Output (Conversion, DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_s..ear_Output   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+60     _blocks_blocks_2_m..v_output_0 (Conv2D, Conv)                    [b:1,h:7,c:48]        20,784/83,136     145,200   _blocks_blocks_2_m..ear_Output   | -62,208(-74.8%)                     Pad_/Conv2D_[18, 19]   
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+61     _blocks_blocks_2_m..ear_Output (Conversion, QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..v_output_0   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+62     _blocks_blocks_2_m..ear_Output (Conversion, DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..ear_Output   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+63     _blocks_blocks_2_r..u_output_0 (Eltwise, Add)                    [b:1,h:7,c:48]                              336   _blocks_blocks_2_m..ear_Output   |                                     Eltwise/add_[21]       
+                                                                                                                          _blocks_blocks_2_s..ear_Output   | 
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+64     _blocks_blocks_2_r..ear_Output (Conversion, QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_r..u_output_0   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+65     _blocks_blocks_2_r..ear_Output (Conversion, DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_r..ear_Output   |                   -672(-100.0%)     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+66     _pool_GlobalAverag..l_output_0 (Pool, GlobalAveragePool)         [b:1,h:1,c:48]                              336   _blocks_blocks_2_r..ear_Output   |                                     Pool_[22]              
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+67     _pool_GlobalAverag..ear_Output (Conversion, QuantizeLinear)      [b:1,h:1,c:48]                               96   _pool_GlobalAverag..l_output_0   |                   -96(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+68     _pool_GlobalAverag..ear_Output (Conversion, DequantizeLinear)    [b:1,h:1,c:48]                               96   _pool_GlobalAverag..ear_Output   |                   -96(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+69     _Flatten_output_0 (Reshape, Flatten)                             [b:1,c:48]                                        _pool_GlobalAverag..ear_Output   |                                     
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+70     _Flatten_output_0_..ear_Output (Conversion, QuantizeLinear)      [b:1,c:48]                                   96                _Flatten_output_0   |                   -96(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+71     _Flatten_output_0_..ear_Output (Conversion, DequantizeLinear)    [b:1,c:48]                                   96   _Flatten_output_0_..ear_Output   |                   -96(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+72     logits_QuantizeLinear_Input (Gemm, Gemm)                         [b:1,c:35]                                1,715   _Flatten_output_0_..ear_Output   | +1,820(+100.0%)                     Dense_[o][23]          
+                                                                                                                          classifier_weight_..tput_const   | 
+                                                                                                                                   classifier_bias_const   | 
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+73     logits_QuantizeLinear_Output (Conversion, QuantizeLinear)        [b:1,c:35]                                   70      logits_QuantizeLinear_Input   |                   -70(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+74     logits (Conversion, DequantizeLinear)                            [b:1,c:35]                                   70     logits_QuantizeLinear_Output   |                   -70(-100.0%)      
+------ ---------------------------------------------------------------- --------------------- --------------- --------- -------------------------------- --- ----------------- ----------------- ---------------------- 
+model/c-model: macc=799,708/773,436 -26,272(-3.3%) weights=261,996/66,588 -195,408(-74.6%) activations=--/8,992 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : tcresnet_int8_v17
+c-name                : network
+c-node #              : 24
+c-array #             : 58
+activations size      : 8992 (1 segment)
+weights size          : 66588 (1 segment)
+macc                  : 773436
+inputs                : ['mfcc_output']
+outputs               : ['logits_QuantizeLinear_Input_output']
+
+C-Arrays (58)
+------ -------------------------------------------------------------- ------------- ------------------------- ----------- --------- 
+c_id   name (*_array)                                                 item/size     domain/mem-pool           c-type      comment   
+------ -------------------------------------------------------------- ------------- ------------------------- ----------- --------- 
+0      _Squeeze_output_0_to_chlast_output                             490/490       activations/**default**   s8                    
+1      _blocks_blocks_0_main_main_2_Relu_output_0_bias                24/96         weights/weights           const s32             
+2      _blocks_blocks_0_main_main_2_Relu_output_0_output              600/600       activations/**default**   s8                    
+3      _blocks_blocks_0_main_main_2_Relu_output_0_pad_before_output   912/912       activations/**default**   s8                    
+4      _blocks_blocks_0_main_main_2_Relu_output_0_scratch0            6032/6032     activations/**default**   s8                    
+5      _blocks_blocks_0_main_main_2_Relu_output_0_weights             3456/3456     weights/weights           const s8              
+6      _blocks_blocks_0_main_main_3_Conv_output_0_bias                24/96         weights/weights           const s32             
+7      _blocks_blocks_0_main_main_3_Conv_output_0_output              600/600       activations/**default**   s8                    
+8      _blocks_blocks_0_main_main_3_Conv_output_0_pad_before_output   792/792       activations/**default**   s8                    
+9      _blocks_blocks_0_main_main_3_Conv_output_0_scratch0            6320/6320     activations/**default**   s8                    
+10     _blocks_blocks_0_main_main_3_Conv_output_0_weights             5184/5184     weights/weights           const s8              
+11     _blocks_blocks_0_relu_Relu_output_0_output                     600/600       activations/**default**   s8                    
+12     _blocks_blocks_0_skip_skip_0_Conv_output_0_bias                24/96         weights/weights           const s32             
+13     _blocks_blocks_0_skip_skip_0_Conv_output_0_output              600/600       activations/**default**   s8                    
+14     _blocks_blocks_0_skip_skip_0_Conv_output_0_scratch0            1168/1168     activations/**default**   s8                    
+15     _blocks_blocks_0_skip_skip_0_Conv_output_0_weights             384/384       weights/weights           const s8              
+16     _blocks_blocks_1_main_main_2_Relu_output_0_bias                32/128        weights/weights           const s32             
+17     _blocks_blocks_1_main_main_2_Relu_output_0_output              416/416       activations/**default**   s8                    
+18     _blocks_blocks_1_main_main_2_Relu_output_0_pad_before_output   792/792       activations/**default**   s8                    
+19     _blocks_blocks_1_main_main_2_Relu_output_0_scratch0            6432/6432     activations/**default**   s8                    
+20     _blocks_blocks_1_main_main_2_Relu_output_0_weights             6912/6912     weights/weights           const s8              
+21     _blocks_blocks_1_main_main_3_Conv_output_0_bias                32/128        weights/weights           const s32             
+22     _blocks_blocks_1_main_main_3_Conv_output_0_output              416/416       activations/**default**   s8                    
+23     _blocks_blocks_1_main_main_3_Conv_output_0_pad_before_output   672/672       activations/**default**   s8                    
+24     _blocks_blocks_1_main_main_3_Conv_output_0_scratch0            6720/6720     activations/**default**   s8                    
+25     _blocks_blocks_1_main_main_3_Conv_output_0_weights             9216/9216     weights/weights           const s8              
+26     _blocks_blocks_1_relu_Relu_output_0_output                     416/416       activations/**default**   s8                    
+27     _blocks_blocks_1_skip_skip_0_Conv_output_0_bias                32/128        weights/weights           const s32             
+28     _blocks_blocks_1_skip_skip_0_Conv_output_0_output              416/416       activations/**default**   s8                    
+29     _blocks_blocks_1_skip_skip_0_Conv_output_0_scratch0            2080/2080     activations/**default**   s8                    
+30     _blocks_blocks_1_skip_skip_0_Conv_output_0_weights             768/768       weights/weights           const s8              
+31     _blocks_blocks_2_main_main_2_Relu_output_0_bias                48/192        weights/weights           const s32             
+32     _blocks_blocks_2_main_main_2_Relu_output_0_output              336/336       activations/**default**   s8                    
+33     _blocks_blocks_2_main_main_2_Relu_output_0_pad_before_output   672/672       activations/**default**   s8                    
+34     _blocks_blocks_2_main_main_2_Relu_output_0_scratch0            6944/6944     activations/**default**   s8                    
+35     _blocks_blocks_2_main_main_2_Relu_output_0_weights             13824/13824   weights/weights           const s8              
+36     _blocks_blocks_2_main_main_3_Conv_output_0_bias                48/192        weights/weights           const s32             
+37     _blocks_blocks_2_main_main_3_Conv_output_0_output              336/336       activations/**default**   s8                    
+38     _blocks_blocks_2_main_main_3_Conv_output_0_pad_before_output   720/720       activations/**default**   s8                    
+39     _blocks_blocks_2_main_main_3_Conv_output_0_scratch0            7520/7520     activations/**default**   s8                    
+40     _blocks_blocks_2_main_main_3_Conv_output_0_weights             20736/20736   weights/weights           const s8              
+41     _blocks_blocks_2_relu_Relu_output_0_output                     336/336       activations/**default**   s8                    
+42     _blocks_blocks_2_skip_skip_0_Conv_output_0_bias                48/192        weights/weights           const s32             
+43     _blocks_blocks_2_skip_skip_0_Conv_output_0_output              336/336       activations/**default**   s8                    
+44     _blocks_blocks_2_skip_skip_0_Conv_output_0_scratch0            3872/3872     activations/**default**   s8                    
+45     _blocks_blocks_2_skip_skip_0_Conv_output_0_weights             1536/1536     weights/weights           const s8              
+46     _pool_GlobalAveragePool_output_0_output                        48/48         activations/**default**   s8                    
+47     _stem_stem_2_Relu_output_0_bias                                16/64         weights/weights           const s32             
+48     _stem_stem_2_Relu_output_0_output                              784/784       activations/**default**   s8                    
+49     _stem_stem_2_Relu_output_0_pad_before_output                   570/570       activations/**default**   s8                    
+50     _stem_stem_2_Relu_output_0_scratch0                            3464/3464     activations/**default**   s8                    
+51     _stem_stem_2_Relu_output_0_weights                             1440/1440     weights/weights           const s8              
+52     logits_QuantizeLinear_Input_bias                               35/140        weights/weights           const s32             
+53     logits_QuantizeLinear_Input_output                             35/35         activations/**default**   s8          /output   
+54     logits_QuantizeLinear_Input_scratch0                           223/446       activations/**default**   s16                   
+55     logits_QuantizeLinear_Input_weights                            1680/1680     weights/weights           const s8              
+56     mfcc_0_conversion_output                                       490/490       activations/**default**   s8                    
+57     mfcc_output                                                    490/1960      activations/**default**   float       /input    
+------ -------------------------------------------------------------- ------------- ------------------------- ----------- --------- 
+
+C-Layers (24)
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+c_id   name (*_layer)                                          id   layer_type     macc     rom     tensors                                                           shape (array id)       
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+0      mfcc_0_conversion                                       0    Conversion     980      0       I: mfcc_output                                                    f32(1x49x10x1) (57)    
+                                                                                                    O: mfcc_0_conversion_output                                       int8(1x49x10x1) (56)   
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+1      _Squeeze_output_0_to_chlast                             3    Transpose      245      0       I: mfcc_0_conversion_output                                       int8(1x49x10x1) (56)   
+                                                                                                    O: _Squeeze_output_0_to_chlast_output                             int8(1x1x49x10) (0)    
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+2      _stem_stem_2_Relu_output_0_pad_before                   27   Pad            0        0       I: _Squeeze_output_0_to_chlast_output                             int8(1x1x49x10) (0)    
+                                                                                                    O: _stem_stem_2_Relu_output_0_pad_before_output                   int8(1x57x10) (49)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+3      _stem_stem_2_Relu_output_0                              27   Conv2D         70576    1504    I: _stem_stem_2_Relu_output_0_pad_before_output                   int8(1x57x10) (49)     
+                                                                                                    S: _stem_stem_2_Relu_output_0_scratch0                                                   
+                                                                                                    W: _stem_stem_2_Relu_output_0_weights                             int8(16x9x1x10) (51)   
+                                                                                                    W: _stem_stem_2_Relu_output_0_bias                                int32(16) (47)         
+                                                                                                    O: _stem_stem_2_Relu_output_0_output                              int8(1x49x16) (48)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+4      _blocks_blocks_0_main_main_2_Relu_output_0_pad_before   30   Pad            0        0       I: _stem_stem_2_Relu_output_0_output                              int8(1x49x16) (48)     
+                                                                                                    O: _blocks_blocks_0_main_main_2_Relu_output_0_pad_before_output   int8(1x57x16) (3)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+5      _blocks_blocks_0_main_main_2_Relu_output_0              30   Conv2D         86424    3552    I: _blocks_blocks_0_main_main_2_Relu_output_0_pad_before_output   int8(1x57x16) (3)      
+                                                                                                    S: _blocks_blocks_0_main_main_2_Relu_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_0_main_main_2_Relu_output_0_weights             int8(24x9x1x16) (5)    
+                                                                                                    W: _blocks_blocks_0_main_main_2_Relu_output_0_bias                int32(24) (1)          
+                                                                                                    O: _blocks_blocks_0_main_main_2_Relu_output_0_output              int8(1x25x24) (2)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+6      _blocks_blocks_0_main_main_3_Conv_output_0_pad_before   36   Pad            0        0       I: _blocks_blocks_0_main_main_2_Relu_output_0_output              int8(1x25x24) (2)      
+                                                                                                    O: _blocks_blocks_0_main_main_3_Conv_output_0_pad_before_output   int8(1x33x24) (8)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+7      _blocks_blocks_0_main_main_3_Conv_output_0              36   Conv2D         129624   5280    I: _blocks_blocks_0_main_main_3_Conv_output_0_pad_before_output   int8(1x33x24) (8)      
+                                                                                                    S: _blocks_blocks_0_main_main_3_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_0_main_main_3_Conv_output_0_weights             int8(24x9x1x24) (10)   
+                                                                                                    W: _blocks_blocks_0_main_main_3_Conv_output_0_bias                int32(24) (6)          
+                                                                                                    O: _blocks_blocks_0_main_main_3_Conv_output_0_output              int8(1x25x24) (7)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+8      _blocks_blocks_0_skip_skip_0_Conv_output_0              31   Conv2D         9624     480     I: _stem_stem_2_Relu_output_0_output                              int8(1x49x16) (48)     
+                                                                                                    S: _blocks_blocks_0_skip_skip_0_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_0_skip_skip_0_Conv_output_0_weights             int8(24x1x1x16) (15)   
+                                                                                                    W: _blocks_blocks_0_skip_skip_0_Conv_output_0_bias                int32(24) (12)         
+                                                                                                    O: _blocks_blocks_0_skip_skip_0_Conv_output_0_output              int8(1x25x24) (13)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+9      _blocks_blocks_0_relu_Relu_output_0                     39   Eltwise/add    600      0       I: _blocks_blocks_0_main_main_3_Conv_output_0_output              int8(1x25x24) (7)      
+                                                                                                    I: _blocks_blocks_0_skip_skip_0_Conv_output_0_output              int8(1x25x24) (7)      
+                                                                                                    O: _blocks_blocks_0_relu_Relu_output_0_output                     int8(1x25x24) (11)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+10     _blocks_blocks_1_main_main_2_Relu_output_0_pad_before   42   Pad            0        0       I: _blocks_blocks_0_relu_Relu_output_0_output                     int8(1x25x24) (11)     
+                                                                                                    O: _blocks_blocks_1_main_main_2_Relu_output_0_pad_before_output   int8(1x33x24) (18)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+11     _blocks_blocks_1_main_main_2_Relu_output_0              42   Conv2D         89888    7040    I: _blocks_blocks_1_main_main_2_Relu_output_0_pad_before_output   int8(1x33x24) (18)     
+                                                                                                    S: _blocks_blocks_1_main_main_2_Relu_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_1_main_main_2_Relu_output_0_weights             int8(32x9x1x24) (20)   
+                                                                                                    W: _blocks_blocks_1_main_main_2_Relu_output_0_bias                int32(32) (16)         
+                                                                                                    O: _blocks_blocks_1_main_main_2_Relu_output_0_output              int8(1x13x32) (17)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+12     _blocks_blocks_1_main_main_3_Conv_output_0_pad_before   48   Pad            0        0       I: _blocks_blocks_1_main_main_2_Relu_output_0_output              int8(1x13x32) (17)     
+                                                                                                    O: _blocks_blocks_1_main_main_3_Conv_output_0_pad_before_output   int8(1x21x32) (23)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+13     _blocks_blocks_1_main_main_3_Conv_output_0              48   Conv2D         119840   9344    I: _blocks_blocks_1_main_main_3_Conv_output_0_pad_before_output   int8(1x21x32) (23)     
+                                                                                                    S: _blocks_blocks_1_main_main_3_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_1_main_main_3_Conv_output_0_weights             int8(32x9x1x32) (25)   
+                                                                                                    W: _blocks_blocks_1_main_main_3_Conv_output_0_bias                int32(32) (21)         
+                                                                                                    O: _blocks_blocks_1_main_main_3_Conv_output_0_output              int8(1x13x32) (22)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+14     _blocks_blocks_1_skip_skip_0_Conv_output_0              43   Conv2D         10016    896     I: _blocks_blocks_0_relu_Relu_output_0_output                     int8(1x25x24) (11)     
+                                                                                                    S: _blocks_blocks_1_skip_skip_0_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_1_skip_skip_0_Conv_output_0_weights             int8(32x1x1x24) (30)   
+                                                                                                    W: _blocks_blocks_1_skip_skip_0_Conv_output_0_bias                int32(32) (27)         
+                                                                                                    O: _blocks_blocks_1_skip_skip_0_Conv_output_0_output              int8(1x13x32) (28)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+15     _blocks_blocks_1_relu_Relu_output_0                     51   Eltwise/add    416      0       I: _blocks_blocks_1_main_main_3_Conv_output_0_output              int8(1x13x32) (22)     
+                                                                                                    I: _blocks_blocks_1_skip_skip_0_Conv_output_0_output              int8(1x13x32) (22)     
+                                                                                                    O: _blocks_blocks_1_relu_Relu_output_0_output                     int8(1x13x32) (26)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+16     _blocks_blocks_2_main_main_2_Relu_output_0_pad_before   54   Pad            0        0       I: _blocks_blocks_1_relu_Relu_output_0_output                     int8(1x13x32) (26)     
+                                                                                                    O: _blocks_blocks_2_main_main_2_Relu_output_0_pad_before_output   int8(1x21x32) (33)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+17     _blocks_blocks_2_main_main_2_Relu_output_0              54   Conv2D         96816    14016   I: _blocks_blocks_2_main_main_2_Relu_output_0_pad_before_output   int8(1x21x32) (33)     
+                                                                                                    S: _blocks_blocks_2_main_main_2_Relu_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_2_main_main_2_Relu_output_0_weights             int8(48x9x1x32) (35)   
+                                                                                                    W: _blocks_blocks_2_main_main_2_Relu_output_0_bias                int32(48) (31)         
+                                                                                                    O: _blocks_blocks_2_main_main_2_Relu_output_0_output              int8(1x7x48) (32)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+18     _blocks_blocks_2_main_main_3_Conv_output_0_pad_before   60   Pad            0        0       I: _blocks_blocks_2_main_main_2_Relu_output_0_output              int8(1x7x48) (32)      
+                                                                                                    O: _blocks_blocks_2_main_main_3_Conv_output_0_pad_before_output   int8(1x15x48) (38)     
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+19     _blocks_blocks_2_main_main_3_Conv_output_0              60   Conv2D         145200   20928   I: _blocks_blocks_2_main_main_3_Conv_output_0_pad_before_output   int8(1x15x48) (38)     
+                                                                                                    S: _blocks_blocks_2_main_main_3_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_2_main_main_3_Conv_output_0_weights             int8(48x9x1x48) (40)   
+                                                                                                    W: _blocks_blocks_2_main_main_3_Conv_output_0_bias                int32(48) (36)         
+                                                                                                    O: _blocks_blocks_2_main_main_3_Conv_output_0_output              int8(1x7x48) (37)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+20     _blocks_blocks_2_skip_skip_0_Conv_output_0              55   Conv2D         10800    1728    I: _blocks_blocks_1_relu_Relu_output_0_output                     int8(1x13x32) (26)     
+                                                                                                    S: _blocks_blocks_2_skip_skip_0_Conv_output_0_scratch0                                   
+                                                                                                    W: _blocks_blocks_2_skip_skip_0_Conv_output_0_weights             int8(48x1x1x32) (45)   
+                                                                                                    W: _blocks_blocks_2_skip_skip_0_Conv_output_0_bias                int32(48) (42)         
+                                                                                                    O: _blocks_blocks_2_skip_skip_0_Conv_output_0_output              int8(1x7x48) (43)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+21     _blocks_blocks_2_relu_Relu_output_0                     63   Eltwise/add    336      0       I: _blocks_blocks_2_main_main_3_Conv_output_0_output              int8(1x7x48) (37)      
+                                                                                                    I: _blocks_blocks_2_skip_skip_0_Conv_output_0_output              int8(1x7x48) (37)      
+                                                                                                    O: _blocks_blocks_2_relu_Relu_output_0_output                     int8(1x7x48) (41)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+22     _pool_GlobalAveragePool_output_0                        66   Pool           336      0       I: _blocks_blocks_2_relu_Relu_output_0_output                     int8(1x7x48) (41)      
+                                                                                                    O: _pool_GlobalAveragePool_output_0_output                        int8(1x1x48) (46)      
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+23     logits_QuantizeLinear_Input                             72   Dense          1715     1820    I: _pool_GlobalAveragePool_output_0_output                        int8(1x1x48) (46)      
+                                                                                                    S: logits_QuantizeLinear_Input_scratch0                                                  
+                                                                                                    W: logits_QuantizeLinear_Input_weights                            int8(35x48) (55)       
+                                                                                                    W: logits_QuantizeLinear_Input_bias                               int32(35) (52)         
+                                                                                                    O: logits_QuantizeLinear_Input_output                             int8(1x35) (53)        
+------ ------------------------------------------------------- ---- -------------- -------- ------- ----------------------------------------------------------------- ---------------------- 
+
+
+
+Number of operations per c-layer
+------- ------ ---------------------------------------------- --------- ------------- 
+c_id    m_id   name (type)                                          #op          type 
+------- ------ ---------------------------------------------- --------- ------------- 
+0       0      mfcc_0_conversion (Conversion)                       980   smul_f32_s8 
+1       3      _Squeeze_output_0_to_chlast (Transpose)              245    smul_s8_s8 
+2       27     _stem_stem_2_Relu_..pad_before (Pad)                   0    smul_s8_s8 
+3       27     _stem_stem_2_Relu_output_0 (Conv2D)               70,576    smul_s8_s8 
+4       30     _blocks_blocks_0_m..pad_before (Pad)                   0    smul_s8_s8 
+5       30     _blocks_blocks_0_m..u_output_0 (Conv2D)           86,424    smul_s8_s8 
+6       36     _blocks_blocks_0_m..pad_before (Pad)                   0    smul_s8_s8 
+7       36     _blocks_blocks_0_m..v_output_0 (Conv2D)          129,624    smul_s8_s8 
+8       31     _blocks_blocks_0_s..v_output_0 (Conv2D)            9,624    smul_s8_s8 
+9       39     _blocks_blocks_0_r..u_output_0 (Eltwise/add)         600      op_s8_s8 
+10      42     _blocks_blocks_1_m..pad_before (Pad)                   0    smul_s8_s8 
+11      42     _blocks_blocks_1_m..u_output_0 (Conv2D)           89,888    smul_s8_s8 
+12      48     _blocks_blocks_1_m..pad_before (Pad)                   0    smul_s8_s8 
+13      48     _blocks_blocks_1_m..v_output_0 (Conv2D)          119,840    smul_s8_s8 
+14      43     _blocks_blocks_1_s..v_output_0 (Conv2D)           10,016    smul_s8_s8 
+15      51     _blocks_blocks_1_r..u_output_0 (Eltwise/add)         416      op_s8_s8 
+16      54     _blocks_blocks_2_m..pad_before (Pad)                   0    smul_s8_s8 
+17      54     _blocks_blocks_2_m..u_output_0 (Conv2D)           96,816    smul_s8_s8 
+18      60     _blocks_blocks_2_m..pad_before (Pad)                   0    smul_s8_s8 
+19      60     _blocks_blocks_2_m..v_output_0 (Conv2D)          145,200    smul_s8_s8 
+20      55     _blocks_blocks_2_s..v_output_0 (Conv2D)           10,800    smul_s8_s8 
+21      63     _blocks_blocks_2_r..u_output_0 (Eltwise/add)         336      op_s8_s8 
+22      66     _pool_GlobalAverag..l_output_0 (Pool)                336    smul_s8_s8 
+23      72     logits_QuantizeLinear_Input (Dense)                1,715    smul_s8_s8 
+------- ------ ---------------------------------------------- --------- ------------- 
+total                                                           773,436 
+
+Number of operation types
+---------------- --------- ----------- 
+operation type           #           % 
+---------------- --------- ----------- 
+smul_f32_s8            980        0.1% 
+smul_s8_s8         771,104       99.7% 
+op_s8_s8             1,352        0.2% 
+
+Complexity report (model)
+------ ------------------------------------------ ------------------------- ------------------------- ---------- 
+m_id   name                                       c_macc                    c_rom                     c_id       
+------ ------------------------------------------ ------------------------- ------------------------- ---------- 
+0      mfcc                                       |                  0.1%   |                  0.0%   [0]        
+3      _Squeeze_output_0                          |                  0.0%   |                  0.0%   [1]        
+27     _stem_stem_2_Relu_output_0                 ||||||||           9.1%   ||                 2.3%   [2, 3]     
+30     _blocks_blocks_0_main_main_2..u_output_0   |||||||||         11.2%   |||                5.3%   [4, 5]     
+31     _blocks_blocks_0_skip_skip_0..v_output_0   |                  1.2%   |                  0.7%   [8]        
+36     _blocks_blocks_0_main_main_3..v_output_0   ||||||||||||||    16.8%   ||||               7.9%   [6, 7]     
+39     _blocks_blocks_0_relu_Relu_output_0        |                  0.1%   |                  0.0%   [9]        
+42     _blocks_blocks_1_main_main_2..u_output_0   ||||||||||        11.6%   ||||||            10.6%   [10, 11]   
+43     _blocks_blocks_1_skip_skip_0..v_output_0   ||                 1.3%   |                  1.3%   [14]       
+48     _blocks_blocks_1_main_main_3..v_output_0   |||||||||||||     15.5%   |||||||           14.0%   [12, 13]   
+51     _blocks_blocks_1_relu_Relu_output_0        |                  0.1%   |                  0.0%   [15]       
+54     _blocks_blocks_2_main_main_2..u_output_0   |||||||||||       12.5%   |||||||||||       21.0%   [16, 17]   
+55     _blocks_blocks_2_skip_skip_0..v_output_0   ||                 1.4%   ||                 2.6%   [20]       
+60     _blocks_blocks_2_main_main_3..v_output_0   ||||||||||||||||  18.8%   ||||||||||||||||  31.4%   [18, 19]   
+63     _blocks_blocks_2_relu_Relu_output_0        |                  0.0%   |                  0.0%   [21]       
+66     _pool_GlobalAveragePool_output_0           |                  0.0%   |                  0.0%   [22]       
+72     logits_QuantizeLinear_Input                |                  0.2%   ||                 2.7%   [23]       
+------ ------------------------------------------ ------------------------- ------------------------- ---------- 
+macc=773,436 weights=66,588 act=8,992 ram_io=0
+
+Generated files (7)
+--------------------------------------------------------------------------------------------------------------------- 
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network_data_params.h   
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network_data_params.c   
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network_data.h          
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network_data.c          
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network_config.h        
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network.h               
+/Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_cpu/network.c               

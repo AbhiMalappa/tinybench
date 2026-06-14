@@ -40,7 +40,7 @@ DS-CNN INT8 keyword spotting on Arduino Nano 33 BLE Sense Rev2, driven by a host
 ## File inventory
 
 ### Firmware
-- `firmware/arduino_nano33/kws_dscnn/kws_dscnn.ino` — main sketch. Uses `input_buffer[490]` + memcpy pattern. `kBenchRuns=10`, `kReadTimeoutMs=30000`. No diagnostic prints in current build.
+- `firmware/arduino_nano33/kws_dscnn/kws_dscnn.ino` — main sketch. Uses `input_buffer[490]` + memcpy pattern. `kBenchRuns=1` (one timed Invoke/sample; latency distribution taken host-side over all samples — same on ESP32-S3 and STM32N6), `kReadTimeoutMs=30000`. No diagnostic prints in current build.
 - `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.cpp` — model bytes. `extern const unsigned char g_model_data[] alignas(8)`.
 - `firmware/arduino_nano33/kws_dscnn/dscnn_model_data.h`
 - `firmware/arduino_nano33/kws_dscnn/dscnn_int8.tflite` — source model (~48 KB)
@@ -78,7 +78,7 @@ Reference accuracies (TFLite): DS-CNN 92.70%, TC-ResNet8 92.99%. ONNX: DS-CNN 92
 |---|---|---|---|
 | Switch AllOpsResolver → MicroMutableOpResolver with CMSIS-NN | HIGH (Paper) | ~30 min | Brings latency from 1146 ms → ~100 ms, flash 397 KB → ~150 KB. **Required for credible paper numbers.** |
 | Bump post-reflash sleep from 2 s → 3 s | LOW | trivial | Boot message sometimes missed → `arena_used_kb` shows 0 in summary. Cosmetic. |
-| STM32N6570-DK benchmarks (NPU on + off for DS-CNN, TC-ResNet8, GRU-96) | HIGH (Paper) | partner | 6 runs pending. ONNX vectors + ref preds ready in `test_vectors/`. |
+| ~~STM32N6570-DK benchmarks~~ | HIGH (Paper) | done in-house | **CPU (NPU-off) ✅ done for all 3 models** (2026-06-13/14): DS-CNN 92.71%/249 ms, TC-ResNet8 93.02%/11.16 ms, GRU-96 92.63%/194 ms; 0 failures, ≥99.9% MCU↔ONNX agreement. NPU-on for the 2 CNNs pending (LL_ATON + ext-flash); **GRU-NPU infeasible** (Neural-ART 4-D layout). See `firmware/stm32n6/FINDINGS.md` + `RESULTS_CPU.md`. |
 
 ## How to resume
 

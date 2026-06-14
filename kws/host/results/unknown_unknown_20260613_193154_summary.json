@@ -1,0 +1,21 @@
+{
+  "board": "unknown",
+  "n_target": 5,
+  "n_completed_cumulative": 5,
+  "n_failed_cumulative": 0,
+  "session_ran": 5,
+  "session_failed": 0,
+  "mcu_accuracy": 0.8,
+  "mcu_ref_agreement": 1.0,
+  "latency_ms": {
+    "median": 248.5178,
+    "p50": 248.5178,
+    "p95": 248.51788,
+    "p99": 248.517896,
+    "min": 248.5176,
+    "max": 248.5179
+  },
+  "arena_used_kb": 0.0,
+  "session_wall_clock_s": 125.40195512771606,
+  "log_path": "kws/host/results/unknown_unknown_20260613_193154.jsonl"
+}

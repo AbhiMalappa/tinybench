@@ -1,0 +1,201 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2026-06-13 12:21:25
+Parameters            : generate --target stm32n6 --name network --model /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/checkpoints/tcresnet_int8_v17.onnx --output /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_npu/ --st-neural-art profile-default
+
+Model name - tcresnet_int8_v17
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+m_id   layer (original)                                     oshape                param/size           macc                     connected to 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+0      mfcc ()                                              [b:1,h:49,w:10,c:1]                                                              
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+1      classifier_bias_const (DequantizeLinear)             [b:35]                35/140                                                     
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+2      classifier_weight_..tput_const (DequantizeLinear)    [b:35,c:48]           1,680/6,720                                                
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+3      _Squeeze_output_0 (Squeeze)                          [b:1,h:10,c:49]                                                             mfcc 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+24     _Transpose_output_0 (Transpose)                      [b:1,h:49,c:10]                             245                _Squeeze_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+25     _Transpose_output_..ear_Output (QuantizeLinear)      [b:1,h:49,c:10]                             980              _Transpose_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+26     _Transpose_output_..ear_Output (DequantizeLinear)    [b:1,h:49,c:10]                             980   _Transpose_output_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+27     _stem_stem_2_Relu_output_0 (Conv)                    [b:1,h:49,c:16]       1,456/5,824        70,576   _Transpose_output_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+28     _stem_stem_2_Relu_..ear_Output (QuantizeLinear)      [b:1,h:49,c:16]                           1,568       _stem_stem_2_Relu_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+29     _stem_stem_2_Relu_..ear_Output (DequantizeLinear)    [b:1,h:49,c:16]                           1,568   _stem_stem_2_Relu_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+30     _blocks_blocks_0_m..u_output_0 (Conv)                [b:1,h:25,c:24]       3,480/13,920       86,424   _stem_stem_2_Relu_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+31     _blocks_blocks_0_s..v_output_0 (Conv)                [b:1,h:25,c:24]       408/1,632           9,624   _stem_stem_2_Relu_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+32     _blocks_blocks_0_m..ear_Output (QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+33     _blocks_blocks_0_s..ear_Output (QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_s..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+34     _blocks_blocks_0_m..ear_Output (DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+35     _blocks_blocks_0_s..ear_Output (DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+36     _blocks_blocks_0_m..v_output_0 (Conv)                [b:1,h:25,c:24]       5,208/20,832      129,624   _blocks_blocks_0_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+37     _blocks_blocks_0_m..ear_Output (QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+38     _blocks_blocks_0_m..ear_Output (DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+39     _blocks_blocks_0_r..u_output_0 (Add)                 [b:1,h:25,c:24]                             600   _blocks_blocks_0_m..ear_Output 
+                                                                                                              _blocks_blocks_0_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+40     _blocks_blocks_0_r..ear_Output (QuantizeLinear)      [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_r..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+41     _blocks_blocks_0_r..ear_Output (DequantizeLinear)    [b:1,h:25,c:24]                           1,200   _blocks_blocks_0_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+42     _blocks_blocks_1_m..u_output_0 (Conv)                [b:1,h:13,c:32]       6,944/27,776       89,888   _blocks_blocks_0_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+43     _blocks_blocks_1_s..v_output_0 (Conv)                [b:1,h:13,c:32]       800/3,200          10,016   _blocks_blocks_0_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+44     _blocks_blocks_1_m..ear_Output (QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+45     _blocks_blocks_1_s..ear_Output (QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_s..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+46     _blocks_blocks_1_m..ear_Output (DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+47     _blocks_blocks_1_s..ear_Output (DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+48     _blocks_blocks_1_m..v_output_0 (Conv)                [b:1,h:13,c:32]       9,248/36,992      119,840   _blocks_blocks_1_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+49     _blocks_blocks_1_m..ear_Output (QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+50     _blocks_blocks_1_m..ear_Output (DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+51     _blocks_blocks_1_r..u_output_0 (Add)                 [b:1,h:13,c:32]                             416   _blocks_blocks_1_m..ear_Output 
+                                                                                                              _blocks_blocks_1_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+52     _blocks_blocks_1_r..ear_Output (QuantizeLinear)      [b:1,h:13,c:32]                             832   _blocks_blocks_1_r..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+53     _blocks_blocks_1_r..ear_Output (DequantizeLinear)    [b:1,h:13,c:32]                             832   _blocks_blocks_1_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+54     _blocks_blocks_2_m..u_output_0 (Conv)                [b:1,h:7,c:48]        13,872/55,488      96,816   _blocks_blocks_1_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+55     _blocks_blocks_2_s..v_output_0 (Conv)                [b:1,h:7,c:48]        1,584/6,336        10,800   _blocks_blocks_1_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+56     _blocks_blocks_2_m..ear_Output (QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+57     _blocks_blocks_2_s..ear_Output (QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_s..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+58     _blocks_blocks_2_m..ear_Output (DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+59     _blocks_blocks_2_s..ear_Output (DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+60     _blocks_blocks_2_m..v_output_0 (Conv)                [b:1,h:7,c:48]        20,784/83,136     145,200   _blocks_blocks_2_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+61     _blocks_blocks_2_m..ear_Output (QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..v_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+62     _blocks_blocks_2_m..ear_Output (DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_m..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+63     _blocks_blocks_2_r..u_output_0 (Add)                 [b:1,h:7,c:48]                              336   _blocks_blocks_2_m..ear_Output 
+                                                                                                              _blocks_blocks_2_s..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+64     _blocks_blocks_2_r..ear_Output (QuantizeLinear)      [b:1,h:7,c:48]                              672   _blocks_blocks_2_r..u_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+65     _blocks_blocks_2_r..ear_Output (DequantizeLinear)    [b:1,h:7,c:48]                              672   _blocks_blocks_2_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+66     _pool_GlobalAverag..l_output_0 (GlobalAveragePool)   [b:1,h:1,c:48]                              336   _blocks_blocks_2_r..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+67     _pool_GlobalAverag..ear_Output (QuantizeLinear)      [b:1,h:1,c:48]                               96   _pool_GlobalAverag..l_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+68     _pool_GlobalAverag..ear_Output (DequantizeLinear)    [b:1,h:1,c:48]                               96   _pool_GlobalAverag..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+69     _Flatten_output_0 (Flatten)                          [b:1,c:48]                                        _pool_GlobalAverag..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+70     _Flatten_output_0_..ear_Output (QuantizeLinear)      [b:1,c:48]                                   96                _Flatten_output_0 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+71     _Flatten_output_0_..ear_Output (DequantizeLinear)    [b:1,c:48]                                   96   _Flatten_output_0_..ear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+72     logits_QuantizeLinear_Input (Gemm)                   [b:1,c:35]                                1,715   _Flatten_output_0_..ear_Output 
+                                                                                                              classifier_weight_..tput_const 
+                                                                                                                       classifier_bias_const 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+73     logits_QuantizeLinear_Output (QuantizeLinear)        [b:1,c:35]                                   70      logits_QuantizeLinear_Input 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+74     logits (DequantizeLinear)                            [b:1,c:35]                                   70     logits_QuantizeLinear_Output 
+------ ---------------------------------------------------- --------------------- --------------- --------- -------------------------------- 
+model: macc=799,708 weights=261,996 activations=-- io=--
+
+
+
+
+
+Compilation details
+------------------------------------------------------------------------------------
+Compiler version: 1.1.1-14
+Compiler arguments:  -i /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_npu/tcresnet_int8_v17_OE_3_3_0.onnx --json-quant-file /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_tcresnet_npu/tcresnet_int8_v17_OE_3_3_0_Q.json -g network.c --load-mdesc /Users/rohini/Downloads/stedgeai/Utilities/configs/stm32n6.mdesc --load-mpool /Users/rohini/Downloads/stedgeai/Utilities/mac/targets/stm32/resources/mpools/stm32n6.mpool --save-mpool-file /Users/rohini/Desktop/Abhiraj/tiny_bench_research/st_ai_ws/neural_art__network/stm32n6.mpool --out-dir-prefix /Users/rohini/Desktop/Abhiraj/tiny_bench_research/st_ai_ws/neural_art__network/ --native-float --mvei --cache-maintenance --Ocache-opt --enable-virtual-mem-pools --Os --Oauto-sched --output-info-file c_info.json
+====================================================================================
+
+Memory usage information  (input/output buffers are included in activations)
+------------------------------------------------------------------------------------
+	flexMEM    [0x34000000 - 0x34000000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM1    [0x34064000 - 0x34064000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM2    [0x34100000 - 0x34200000]:          0  B /      1.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM3    [0x34200000 - 0x34270000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM4    [0x34270000 - 0x342E0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM5    [0x342E0000 - 0x34350000]:     11.133 kB /    448.000 kB  (  2.49 % used) -- weights:          0  B (  0.00 % used)  activations:     11.133 kB (  2.49 % used)
+	npuRAM6    [0x34350000 - 0x343C0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	octoFlash  [0x71000000 - 0x78000000]:     66.079 kB /    112.000 MB  (  0.06 % used) -- weights:     66.079 kB (  0.06 % used)  activations:          0  B (  0.00 % used)
+	hyperRAM   [0x90000000 - 0x92000000]:          0  B /     32.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+---
+Total:                                            77.212 kB                                  -- weights:     66.079 kB                  activations:     11.133 kB                   
+====================================================================================
+
+
+Used memory ranges
+------------------------------------------------------------------------------------
+	npuRAM5    [0x342E0000 - 0x34350000]: 0x342E0000-0x342E2C90
+	octoFlash  [0x71000000 - 0x78000000]: 0x71000000-0x71010860
+====================================================================================
+
+Epochs details
+------------------------------------------------------------------------------------
+Total number of epochs: 38 of which 1 implemented in software
+---
+epoch ID   HW/SW/EC Operation (SW only)
+epoch 1      -SW-   (   QuantizeLinear   )
+epoch 2       HW    
+epoch 3       HW    
+epoch 4       HW    
+epoch 5       HW    
+epoch 6       HW    
+epoch 7       HW    
+epoch 8       HW    
+epoch 9       HW    
+epoch 10      HW    
+epoch 11      HW    
+epoch 12      HW    
+epoch 13      HW    
+epoch 14      HW    
+epoch 15      HW    
+epoch 16      HW    
+epoch 17      HW    
+epoch 18      HW    
+epoch 19      HW    
+epoch 20      HW    
+epoch 21      HW    
+epoch 22      HW    
+epoch 23      HW    
+epoch 24      HW    
+epoch 25      HW    
+epoch 26      HW    
+epoch 27      HW    
+epoch 28      HW    
+epoch 29      HW    
+epoch 30      HW    
+epoch 31      HW    
+epoch 32      HW    
+epoch 33      HW    
+epoch 34      HW    
+epoch 35      HW    
+epoch 36      HW    
+epoch 37      HW    
+epoch 38      HW    
+====================================================================================

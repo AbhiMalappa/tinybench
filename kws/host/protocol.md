@@ -61,8 +61,8 @@ After the boot line, the firmware MUST emit a single line containing exactly `RE
    - ONNX backend (STM32/Cube.AI): **1960 float32 bytes**
    - **The host MUST trickle the bytes — Arduino Nano 33 BLE Mbed USB CDC drops bytes on bulk writes >256 B. Reference host implementation uses 32-byte chunks with 50 ms inter-chunk delay. Boards with deeper RX buffers may accept fewer/faster chunks.**
 2. Firmware reads the expected bytes into the input tensor.
-3. Firmware runs **N inferences** on the same input (N is firmware-defined; Arduino=10, ESP32-S3=1, STM32=TBD), measuring each with a hardware cycle counter (DWT->CYCCNT on Cortex-M; CCOUNT on Xtensa LX7).
-4. Firmware computes the **median** of the N cycle counts.
+3. Firmware runs **N inferences** on the same input (N is firmware-defined; **all current boards use N=1** — Arduino, ESP32-S3, and STM32N6), measuring each with a hardware cycle counter (DWT->CYCCNT on Cortex-M; CCOUNT on Xtensa LX7). The per-sample latency distribution (median/p95/p99) is taken **host-side across all samples**, so a single timed inference per sample suffices.
+4. Firmware computes the **median** of the N cycle counts (trivially the single count when N=1).
 5. Firmware emits one RESULT line (valid JSON, key `class` present):
 
 ```json
@@ -73,7 +73,7 @@ After the boot line, the firmware MUST emit a single line containing exactly `RE
 |---|---|---|
 | `board` | string | Same as boot |
 | `model` | string | Same as boot |
-| `npu` | int | `1` if NPU enabled (STM32N6 with Ethos-U55), else `0` |
+| `npu` | int | `1` if NPU enabled (STM32N6 with ST Neural-ART), else `0` |
 | `latency_ms` | float | Median latency in ms (cycles / clock_hz × 1000) |
 | `class` | int | Argmax over the 35 INT8 output logits |
 | `score` | int | The winning INT8 score (signed) — sanity field |
@@ -96,7 +96,8 @@ The host treats any line containing `"error"` at the top level as a clip failure
 ## Timing definition (non-negotiable)
 - Cycle counter must be a **hardware** counter (DWT on Cortex-M, CCOUNT on Xtensa).
 - Measured interval: **strictly the `Invoke()` call**, no Serial I/O, no host bytes counted.
-- Reported `latency_ms` is the **median over 100 runs of the same input tensor**.
+- Reported `latency_ms` is the latency of the timed `Invoke()` for that sample (N=1). The
+  headline latency for a model is the **median across all samples**, computed host-side.
 
 ## Test vectors
 

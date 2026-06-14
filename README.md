@@ -6,6 +6,20 @@ Part of the TinyBench series — Paper 1.
 **ML pipeline (Python):** Training, quantization, benchmark orchestration
 **Firmware (C):** STM32CubeIDE / TFLite Micro inference, UART protocol, cycle-counter timing
 
+## Status (2026-06-14)
+
+All boards done **in-house** (the "partner" split mentioned below is historical — built by Abhiraj).
+
+| Board | DS-CNN | TC-ResNet8 | GRU-96 |
+|---|---|---|---|
+| Arduino Nano 33 BLE | ✅ full | ✅ full | ❌ infeasible (TFLite-Micro buffer cap) |
+| ESP32-S3 (SIMD) | ✅ full | ✅ full | ❌ infeasible (TFLite-Micro buffer cap) |
+| STM32N6 CPU (NPU off) | ✅ full | ✅ full | ✅ full |
+| STM32N6 NPU (on) | ⏳ firmware TODO | ⏳ firmware TODO | ❌ infeasible (Neural-ART 4-D layout) |
+
+Numbers + analysis: `../tinybench_kws_results.md`. STM32N6 build/run recipe: `firmware/stm32n6/FINDINGS.md`;
+STM32N6 CPU results detail: `firmware/stm32n6/RESULTS_CPU.md`.
+
 ---
 
 ## Boards
@@ -91,17 +105,20 @@ Input tensor shape: **(1, 49, 10)** — batch × frames × MFCC coefficients, IN
 
 ---
 
-## Partner deployment guide
+## Deployment guide
 
-### STM32N6570-DK — Cube.AI path
+### STM32N6570-DK — X-CUBE-AI / `stedgeai` path (done in-house)
 
-**Model file:** `kws/checkpoints/dscnn_int8.onnx`
+**Model file:** `checkpoints/<model>_int8.onnx` → preprocessed to `<model>_int8_v17.onnx` (IR/opset
+downgrade + static-batch fixes) for `stedgeai`. **Full recipe in `firmware/stm32n6/FINDINGS.md`.**
+The original CubeIDE-GUI steps below are superseded by the CLI flow actually used:
 
-1. Open STM32CubeIDE → New STM32 Project → STM32N6570-DK board
-2. Add X-CUBE-AI middleware pack
-3. In Cube.AI: import `dscnn_int8.onnx` → validate → generate C code
-4. Run each model **twice**: NPU enabled and CPU-only (toggle in Cube.AI config)
-5. Wire up `board_hal.h` (see below)
+1. CPU build: `stedgeai generate --target stm32 --name network -m <model>_int8_v17.onnx -o kws_<model>_cpu/`
+2. NPU build: `stedgeai generate --target stm32n6 --st-neural-art profile-default ...` (weights → ext-flash blob)
+3. Compile: `make MODEL=<model>` (firmware in `firmware/stm32n6/`), then load to SRAM via
+   `STM32_Programmer_CLI -c port=SWD mode=UR -halt -d ...elf -coreReg MSP=0x34200000 PC=<Reset_Handler> -run`
+   (the board has **no internal flash**; `--start` would reset into the bootrom — use `mode=UR` + `-coreReg`/`-run`).
+4. Drive with `kws/host/benchmark_serial.py --backend onnx`. CPU (NPU-off) done for all 3 models; NPU-on pending.
 
 ### ESP32-S3-DevKitC-1 and Arduino Nano 33 — TFLite Micro path
 
@@ -154,7 +171,7 @@ int   hal_get_ram_used_kb();
 | ESP32-S3 | CCOUNT register | `xthal_get_ccount() / 240e6 * 1000` |
 | Arduino Nano 33 | DWT cycle counter | Same as STM32, `SystemCoreClock = 64e6` |
 
-**Latency definition:** median of N inference runs on the same input tensor (N is firmware-defined: Arduino=10, ESP32-S3=1, STM32=TBD). Single-run variance on ESP32-S3 is <0.1 ms so N=1 is sufficient there.
+**Latency definition:** one timed `Invoke()` per sample (`N=1` on **all** boards — Arduino, ESP32-S3, STM32N6); the latency distribution (median/p95/p99) is taken host-side across all 11,005 samples. Single-input variance is <0.1 ms on every board (and ~0.02 ms on STM32N6), so N=1 is statistically tighter than the MLPerf same-input×100 convention at this sample count.
 
 ---
 
@@ -163,7 +180,7 @@ int   hal_get_ram_used_kb();
 - [ ] Correct model format per board: `.tflite` for Arduino/ESP32-S3; `.onnx` for STM32/Cube.AI
 - [ ] Test vectors generated per model+backend (`prepare_test_vectors.py --model X --backend Y`)
 - [ ] MFCC computed on host (Python), tensors sent over UART — no mic needed
-- [ ] Latency = median of N runs per sample (N per firmware: Arduino=10, ESP32-S3=1, STM32=TBD)
+- [ ] Latency = one timed Invoke per sample (N=1 on all boards); distribution taken host-side over all samples
 - [ ] RAM = peak activation memory (Cube.AI reports at compile time; TFLite Micro: arena_used from boot JSON)
 - [ ] Flash = model binary size in bytes
 - [ ] STM32N6: run each model with NPU ON and NPU OFF, report both
