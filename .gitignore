@@ -17,3 +17,12 @@ anomaly/checkpoints/*.pt
 
 # macOS
 .DS_Store
+
+# STM32 NPU build artifacts (regenerable from network.c)
+weights_blob.o
+flash_weights.bin
+
+# Session scratch (benchmark/boot captures)
+bench_*.txt
+boot_*.txt
+res_*.txt

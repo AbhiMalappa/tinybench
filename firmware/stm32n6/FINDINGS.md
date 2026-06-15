@@ -76,7 +76,11 @@ Hand-written, CPU path (`firmware/stm32n6/src/`): `main.c` (800 MHz bringup, USA
 @115200, cache/MPU), `kws_bench.c` (protocol loop, DWT cycle timing, 100 runs/sample, median),
 `stm32n6xx_it.c`. Targets the X-CUBE-AI `ai_network_*` API (CPU builds only).
 
-NPU firmware (LL_ATON) + external-flash programming: not yet started.
+NPU firmware (LL_ATON), `src_npu/`: DONE and running. `main_npu.c` (RISAF NPU-firewall open, NPU+cache
+clocks, XSPI mem-map for ext-flash, NPU @800 MHz), `kws_bench_npu.c` (LL_ATON epoch-loop driver matched
+to ST `ai_wrapper_ATON`). **TC-ResNet8 NPU verified 95% acc / 100% agreement / 0.649 ms.** DS-CNN NPU
+runs but is numerically wrong (~21%) — root cause = its software-fallback 2-D GlobalAveragePool epoch
+(model/generation issue, not firmware). **Full NPU bring-up story in `NPU_BRINGUP_JOURNEY.md`.**
 
 ## Build & run (CPU path) — working recipe
 
@@ -110,7 +114,8 @@ STM32_Programmer_CLI -c port=SWD mode=UR -halt \
 | TC-ResNet8 CPU | ✅ full complete | 93.02% | 99.99% | 11.16 ms | 0/11005 |
 | DS-CNN CPU | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
 | GRU-96 CPU | ✅ full complete | 92.63% | 99.90% | 194.39 ms | 0/11005 |
-| DS-CNN / TC-ResNet8 NPU | generated, firmware TODO | — | — | — | — |
+| TC-ResNet8 NPU | ✅ verified (120 diverse) | 95.0% | 100.00% | 0.649 ms (~17×) | 0 |
+| DS-CNN NPU | ⚠️ runs, wrong output | ~21% | ~21% | 1.36 ms (~183×) | 0 — SW GlobalAvgPool gen bug |
 
 All three also passed 5-sample smoke tests (100% agreement) before the full runs.
 

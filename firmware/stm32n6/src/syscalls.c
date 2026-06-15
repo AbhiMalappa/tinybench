@@ -40,7 +40,17 @@ int  _fstat(int f, struct stat *st)      { (void)f; st->st_mode = S_IFCHR; retur
 int  _isatty(int f)                      { (void)f; return 1; }
 int  _lseek(int f, int p, int w)         { (void)f; (void)p; (void)w; return 0; }
 int  _read(int f, char *p, int n)        { (void)f; (void)p; (void)n; return 0; }
-int  _write(int f, const char *p, int n) { (void)f; (void)p; return n; }
+
+/* Route printf/stdout to USART1 so LL_ATON runtime diagnostics (LL_ATON_PRINTF)
+   are visible during NPU bring-up. huart1 is set up by uart_init() in main. */
+#include "stm32n6xx_hal.h"
+extern UART_HandleTypeDef huart1;
+int  _write(int f, const char *p, int n)
+{
+    (void)f;
+    if (huart1.Instance) HAL_UART_Transmit(&huart1, (uint8_t *)p, n, HAL_MAX_DELAY);
+    return n;
+}
 void _exit(int c)                        { (void)c; while (1); }
 int  _kill(int pid, int sig)             { (void)pid; (void)sig; errno = EINVAL; return -1; }
 int  _getpid(void)                       { return 1; }
