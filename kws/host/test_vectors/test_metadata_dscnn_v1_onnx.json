@@ -6,7 +6,7 @@
   "n_mfcc": 10,
   "n_classes": 35,
   "input_bytes_per_sample": 1960,
-  "reference_accuracy": 0.9207632894139027,
+  "reference_accuracy": 0.9269422989550204,
   "quant_params": {
     "input_name": "mfcc",
     "input_shape_nchw": [
@@ -19,8 +19,8 @@
   },
   "sources": {
     "model": {
-      "path": "./checkpoints/dscnn_v2_int8.onnx",
-      "sha256": "857d06e1f7fb57a01a7630b2bbfbe00d50e2036971f5fbcdeeda35eef68b9b74"
+      "path": "./checkpoints/dscnn_int8.onnx",
+      "sha256": "f3d9dce551a27c6ab6e958f1facec8a915a928ca90f30b0e608a1664ae29ba3f"
     },
     "mfcc_cache": {
       "path": "./mfcc_cache/mfcc_testing.pt",
@@ -52,12 +52,11 @@
       "dtype": "int64"
     },
     "ref_preds_dscnn_onnx.npy": {
-      "sha256": "641ee53b576ac288e76344f1aa6991542f5d30f6328d4ca866a5f5156a0ae418",
+      "sha256": "2b6db8fbc13edfa4366549eadc03ea0de66e7b6b91ac23348c7fce4e2749193f",
       "shape": [
         11005
       ],
       "dtype": "int64"
     }
-  },
-  "note": "HW-friendly DS-CNN v2 (25x6 stem-stride) for STM32N6 NPU; original-model ref backed up as *_v1_*"
+  }
 }

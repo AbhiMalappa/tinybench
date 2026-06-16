@@ -34,7 +34,9 @@ BUILD   := $(PROJ)/build/$(MODEL)_npu
 EXT_DEFS :=
 endif
 
-DEFS_dscnn    := -DAI_NETWORK_IN_SCALE=0.043562427f -DAI_NETWORK_IN_ZP=3 -DWEIGHTS_BLOB_BYTES=396016
+# dscnn_v2 (HW-friendly 25x6 re-arch) input quant: scale 0.04317872, zp 11 (was 0.043562427/3 for the
+# original 50x11 model). WEIGHTS_BLOB_BYTES unused on the EXTMEM/flash path.
+DEFS_dscnn    := -DAI_NETWORK_IN_SCALE=0.04317872226238251f -DAI_NETWORK_IN_ZP=11 -DWEIGHTS_BLOB_BYTES=396016
 DEFS_tcresnet := -DWEIGHTS_BLOB_BYTES=0
 MODEL_DEFS := $(DEFS_$(MODEL))
 

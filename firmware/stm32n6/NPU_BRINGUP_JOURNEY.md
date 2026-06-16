@@ -4,29 +4,30 @@ High-level log of getting the KWS models running on the STM32N6570-DK **Neural-A
 (via the LL_ATON runtime). Companion to `FINDINGS.md` (overview) and `RESULTS_CPU.md` (CPU results).
 Last updated: 2026-06-15.
 
-> TL;DR — The NPU now runs. **TC-ResNet8 NPU works perfectly (95% acc, 100% agreement, 0.649 ms,
-> ~17× vs CPU).** DS-CNN NPU runs at full speed (1.36 ms, ~183× vs CPU) but is numerically wrong
-> (~21%) — **definitively root-caused** to its **2-D global average pool over a [50×11] map
-> exceeding the Neural-ART ≤3×3 HW pooling window**, which forces a software-fallback float epoch
-> (`Dequant→Pool→Quant`) whose HW→SW→HW handoff scrambles the output. NOT firmware (same firmware
-> runs TC-ResNet8 — a 1-D temporal CNN, width-7 pool — at 100%). Fix = re-architect DS-CNN with
-> spatial downsampling so the pre-pool map is small (retrain on GPU); see `FINDINGS.md` DS-CNN FINDING.
+> TL;DR — **All deployable NPU cells DONE.** TC-ResNet8 NPU: 93.02% acc / 99.68% agreement / 0.649 ms
+> (17.2× vs CPU), full 11,005. DS-CNN: the original 50×11 model is numerically wrong (~21%) — root-caused
+> to its 2-D global pool exceeding the Neural-ART ≤3×3 HW window (SW-fallback float epoch). **FIXED via
+> DS-CNN v2:** a stride-(2,2) stem → 25×6 pre-pool map → fully HW (0 SW epochs); re-trained + re-deployed
+> → **92.40% acc / 98.26% agreement / 0.463 ms / 0 failures over 11,005** (accuracy ≈ original 92.71%).
+> GRU-96 NPU stays infeasible (documented). See `FINDINGS.md` DS-CNN FINDING (+RESOLVED) and RESULTS_CPU.md.
 
 ---
 
 ## Current status
 
-| Model | NPU result | Latency | vs CPU | State |
-|---|---|---|---|---|
-| **TC-ResNet8** | **95.0% acc / 100% agreement** | **0.649 ms** | ~17× (11.16 ms) | ✅ DONE, paper-ready |
-| **DS-CNN** | ~21% acc / ~21% agreement (wrong) | 1.36 ms | ~183× (249 ms) | ❌ incompatible as exported (HW pool ≤3×3) |
-| GRU-96 | — | — | — | ❌ infeasible on NPU (documented) |
+| Model | NPU result (full 11,005) | Latency | State |
+|---|---|---|---|
+| **TC-ResNet8** | **93.02% acc / 99.68% agreement / 0 fail** | **0.649 ms** (17.2× vs CPU) | ✅ DONE, paper-ready |
+| **DS-CNN v2** (stride-(2,2) stem → 25×6) | **92.40% acc / 98.26% agreement / 0 fail** | **0.463 ms** (538×†) | ✅ DONE, paper-ready |
+| DS-CNN original (50×11) | ~21% (wrong) | 1.36 ms | ❌ incompatible (HW pool ≤3×3) — documented finding |
+| GRU-96 | — | — | ❌ infeasible on NPU (documented) |
 
-Open task: **re-architect** DS-CNN with spatial downsampling so the pre-pool map is small enough that
-the global pool maps to HW (≤3×3 windows), then **retrain on GPU** → requantize → regenerate → deploy.
-Six in-place ONNX-surgery variants all fail (pooling/large-conv windows > the HW limit force a SW
-float epoch) — see the DS-CNN FINDING in `FINDINGS.md`. Pure surgery cannot fix it; the model's
-spatial resolution must shrink before the pool.
+†538× blends HW + lighter model (v2 = 3.5 M MACC vs original 11.8 M); the 249 ms CPU number is the
+original 50×11. **All deployable NPU cells are complete.** DS-CNN was fixed by re-architecture (NOT
+in-place surgery — six ONNX-surgery variants all failed because the 50×11 global pool / large conv
+exceed the HW window; the model's spatial resolution had to shrink *before* the pool). Probe found
+7×2/13×3/25×6/25×11/50×6 all fully HW (≤~300 pre-pool elements); 25×6 chosen. See DS-CNN FINDING
+(+RESOLVED) in `FINDINGS.md`.
 
 ---
 

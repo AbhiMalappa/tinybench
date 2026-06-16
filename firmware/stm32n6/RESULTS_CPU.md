@@ -47,15 +47,44 @@ reference prediction — the firmware-correctness signal (≈100% ⇒ bit-accura
 
 ## NPU results (Neural-ART enabled, N = 11,005)
 
-Same board + host harness. Weights memory-mapped from external octo-flash (`0x71000000`), activations in
-npuRAM; NPU @ **800 MHz** (IC6÷1), LL_ATON runtime. Latency = on-device DWT time for one epoch-loop
-inference. Full run 2026-06-15 (`stm32n6_unknown_20260615_213555.{jsonl,_summary.json}`, wall clock 2,192 s).
+Same board + host harness. NPU @ **800 MHz** (IC6÷1), LL_ATON runtime. Latency = on-device DWT time for
+one epoch-loop inference. Full run 2026-06-15 (`stm32n6_unknown_20260615_213555.{jsonl,_summary.json}`,
+wall clock 2,192 s).
+
+**Execution context / memory map (applies to all STM32N6 numbers in this doc — CPU and NPU):** the
+STM32N6 has **no internal user flash** (FSBL architecture).
+- **Firmware code executes from internal SRAM** — `AXISRAM1_S @ 0x34000000` (2 MB): `.isr_vector`
+  @ 0x34000000, `.text` @ 0x34000350, `Reset_Handler` @ 0x3400a510. The `.elf` is loaded over ST-Link
+  (SWD, development boot) and run in place from RAM; **no boot-from-flash, no XIP of code**. (Latency is
+  therefore free of any flash instruction-fetch overhead.)
+- **NPU weights** live in **external Octal-SPI NOR flash** (Macronix **MX66UW1G45G**, octal *NOR* — not
+  NAND), on the XSPI/OctoSPI bus, **memory-mapped at `0x71000000`**; the Neural-ART streams weights from
+  there during inference (`EnableMemoryMappedMode`, `--cache-maintenance` + AXI cache on).
+- **NPU activations / working buffers** in **npuRAM** (AXISRAM3–6, `0x342x_xxxx`).
+- CPU cells (X-CUBE-AI `ai_network_*`): same code-from-SRAM; weights+activations also in internal SRAM
+  (no external flash used).
 
 | Model | Status | MCU acc | MCU↔ONNX agreement | Latency median (ms) | NPU speedup vs CPU | Failures |
 |---|---|---|---|---|---|---|
 | TC-ResNet8 | ✅ complete | 93.02% | 99.68% | **0.649** | **17.2×** (11.16 ms) | 0 / 11005 |
-| DS-CNN     | ❌ incompatible as exported | — | — | — | — | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDINGS.md) |
+| DS-CNN (v2, HW re-arch) | ✅ complete | 92.40% | 98.26% | **0.463** | **538×** (249 ms)† | 0 / 11005 |
+| DS-CNN (original 50×11) | ❌ incompatible as exported | — | — | — | — | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDINGS.md) |
 | GRU-96     | ❌ infeasible | — | — | — | — | 5-D sequence layout rejected by Neural-ART (see FINDINGS.md) |
+
+**DS-CNN v2 (HW re-architecture).** The original DS-CNN keeps a 50×11 feature map to a 2-D global average
+pool, which exceeds the Neural-ART ≤3×3 HW pooling window → software-fallback float epoch → wrong output
+(the DS-CNN FINDING in `FINDINGS.md`). Fix: a stride-(2,2) stem shrinks the pre-pool map to **25×6**
+(≤ the ~300-element HW global-pool limit), making the model **fully HW (0 software epochs)** with no
+other change. Re-trained (Kaggle GPU, early-stop epoch 123, val 93.39%), re-quantized (INT8 92.08% host),
+re-deployed. Full NPU run 2026-06-16 (`stm32n6_unknown_20260616_142903.{jsonl,_summary.json}`, wall 2,182 s):
+**92.40% acc / 98.26% agreement / 0.463 ms / 0 failures** — accuracy on par with the original DS-CNN
+(92.71%), latency distribution min 0.4612 / p95 0.4638 / p99 0.4641 ms.
+†**Speedup caveat:** the 0.463 ms NPU figure is the re-arch'd 25×6 model (3.5 M MACC); the 249 ms CPU
+figure is the *original* 50×11 model (11.8 M MACC), so the 538× blends HW acceleration with the lighter
+model. For a same-model HW-vs-CPU number, run the v2 model on the CPU path too (not yet done).
+New artifacts: `checkpoints/dscnn_v2_int8.onnx`, `firmware/stm32n6/kws_dscnn_npu_v2/`, host ref
+`ref_preds_dscnn_onnx.npy` (original-model ref backed up as `*_v1_*`); firmware input quant updated to
+scale 0.04317872 / zp 11 in `Makefile.npu`.
 
 - TC-ResNet8 NPU latency distribution (ms): min 0.6451 / p50 0.6493 / p95 0.6509 / p99 0.6515 / max 0.6532.
 - **Bit-accurate at the accuracy level:** MCU accuracy 93.02% equals the CPU/host (93.02% / 93.01%);

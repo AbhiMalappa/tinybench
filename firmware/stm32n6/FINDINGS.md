@@ -116,9 +116,19 @@ the software float island (artifacts in `kws_dscnn_npu_{hwpool,gap,gap3d,hier,co
 This is a **second model–accelerator incompatibility alongside GRU-96**: as exported, DS-CNN is not
 deployable on the Neural-ART NPU without architectural change — and the reason (the accelerator's
 ≤3×3 pooling window favouring downsampled / 1-D feature maps) is itself an interesting cross-model
-result. **Resolution (planned):** re-architect DS-CNN with spatial downsampling so the pre-pool map
-is small (≤3×3-tileable, like TC-ResNet's width-7), retrain (GPU), re-quantize, regenerate → HW pool,
-then deploy. TC-ResNet8 NPU already works; the re-architected DS-CNN restores the third NPU cell.
+result.
+
+**RESOLVED (2026-06-16) — DS-CNN v2.** A single change fixes it: a **stride-(2,2) stem** shrinks the
+pre-pool map from 50×11 (550, SW) to **25×6** (150) — under the empirically-measured ~300-element HW
+global-pool ceiling — so the model becomes **fully HW (0 software epochs)** with no other change (whole
+DS-CNN body, BN, ReLU, Gemm already map to HW). Re-trained on Kaggle GPU (early-stop epoch 123,
+val 93.39%), re-quantized (INT8 92.08% host), regenerated (`stedgeai` report: 14 epochs, **0 SW**),
+and deployed. Full NPU run: **92.40% acc / 98.26% agreement / 0.463 ms / 0 failures over 11,005** —
+accuracy on par with the original (92.71%), and the scramble is gone (98.26% vs the old ~21%). The
+HW ceiling probe found 7×2/13×3/25×6/25×11/50×6 all fully HW; 25×6 chosen (fastest, 3.5 M MACC, −70%).
+Model change is one line in `kws/models/dscnn.py` (`stem_stride=(2,2)`); see RESULTS_CPU.md NPU section
+and `NEURAL_ART_MODELING_CONSTRAINTS.md`. (The original 50×11 DS-CNN remains the documented
+incompatibility above — both are kept for the paper's narrative.)
 
 ## Firmware status
 
@@ -168,7 +178,8 @@ STM32_Programmer_CLI -c port=SWD mode=UR -halt \
 | DS-CNN CPU | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
 | GRU-96 CPU | ✅ full complete | 92.63% | 99.90% | 194.39 ms | 0/11005 |
 | TC-ResNet8 NPU | ✅ complete (N=11,005) | 93.02% | 99.68% | 0.649 ms (17.2×) | 0 / 11005 |
-| DS-CNN NPU | ❌ incompatible as exported | ~21% | ~21% | 1.36 ms (~183×) | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDING) |
+| DS-CNN NPU (v2 HW re-arch) | ✅ complete | 92.40% | 98.26% | 0.463 ms (538×†) | 0 / 11005 — stride-(2,2) stem → 25×6, fully HW |
+| DS-CNN NPU (original 50×11) | ❌ incompatible | ~21% | ~21% | 1.36 ms | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDING) |
 
 All three also passed 5-sample smoke tests (100% agreement) before the full runs.
 

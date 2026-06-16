@@ -1,0 +1,146 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2026-06-16 13:50:36
+Parameters            : generate -m checkpoints/dscnn_v2_int8.onnx --target stm32n6 --st-neural-art -w /tmp/ws_dscnn_v2 -o firmware/stm32n6/kws_dscnn_npu_v2 --name network
+
+Model name - dscnn_v2_int8
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+m_id   layer (original)                                     oshape                param/size          macc                     connected to 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+0      mfcc ()                                              [b:1,h:49,w:10,c:1]                                                             
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+1      classifier_bias_const (DequantizeLinear)             [b:35]                35/140                                                    
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+2      classifier_weight_..tput_const (DequantizeLinear)    [b:35,c:64]           2,240/8,960                                               
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+3      mfcc_QuantizeLinear_Output (QuantizeLinear)          [b:1,h:49,w:10,c:1]                        980                             mfcc 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+22     mfcc_DequantizeLinear_Output (DequantizeLinear)      [b:1,h:49,w:10,c:1]                        980       mfcc_QuantizeLinear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+23     _stem_stem_2_Relu_output_0 (Conv)                    [b:1,h:25,w:6,c:64]   2,624/10,496     384,064     mfcc_DequantizeLinear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+24     _stem_stem_2_Relu_..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200       _stem_stem_2_Relu_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+25     _stem_stem_2_Relu_..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _stem_stem_2_Relu_..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+26     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   640/2,560         86,464   _stem_stem_2_Relu_..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+27     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+28     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+29     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   4,160/16,640     614,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+30     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+31     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+32     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   640/2,560         86,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+33     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+34     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+35     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   4,160/16,640     614,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+36     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+37     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+38     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   640/2,560         86,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+39     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+40     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+41     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   4,160/16,640     614,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+42     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+43     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+44     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   640/2,560         86,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+45     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+46     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+47     _ds_blocks_ds_bloc..u_output_0 (Conv)                [b:1,h:25,w:6,c:64]   4,160/16,640     614,464   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+48     _ds_blocks_ds_bloc..ear_Output (QuantizeLinear)      [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..u_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+49     _ds_blocks_ds_bloc..ear_Output (DequantizeLinear)    [b:1,h:25,w:6,c:64]                     19,200   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+50     _pool_GlobalAverag..l_output_0 (GlobalAveragePool)   [b:1,h:1,w:1,c:64]                       9,600   _ds_blocks_ds_bloc..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+51     _pool_GlobalAverag..ear_Output (QuantizeLinear)      [b:1,h:1,w:1,c:64]                         128   _pool_GlobalAverag..l_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+52     _pool_GlobalAverag..ear_Output (DequantizeLinear)    [b:1,h:1,w:1,c:64]                         128   _pool_GlobalAverag..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+53     _Flatten_output_0 (Flatten)                          [b:1,c:64]                                       _pool_GlobalAverag..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+54     _Flatten_output_0_..ear_Output (QuantizeLinear)      [b:1,c:64]                                 128                _Flatten_output_0 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+55     _Flatten_output_0_..ear_Output (DequantizeLinear)    [b:1,c:64]                                 128   _Flatten_output_0_..ear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+56     logits_QuantizeLinear_Input (Gemm)                   [b:1,c:35]                               2,275   _Flatten_output_0_..ear_Output 
+                                                                                                             classifier_weight_..tput_const 
+                                                                                                                      classifier_bias_const 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+57     logits_QuantizeLinear_Output (QuantizeLinear)        [b:1,c:35]                                  70      logits_QuantizeLinear_Input 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+58     logits (DequantizeLinear)                            [b:1,c:35]                                  70     logits_QuantizeLinear_Output 
+------ ---------------------------------------------------- --------------------- -------------- --------- -------------------------------- 
+model: macc=3,547,863 weights=96,396 activations=-- io=--
+
+
+
+
+
+Compilation details
+------------------------------------------------------------------------------------
+Compiler version: 1.1.1-14
+Compiler arguments:  -i /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_dscnn_npu_v2/dscnn_v2_int8_OE_3_3_0.onnx --json-quant-file /Users/rohini/Desktop/Abhiraj/tiny_bench_research/tinybench/firmware/stm32n6/kws_dscnn_npu_v2/dscnn_v2_int8_OE_3_3_0_Q.json -g network.c --load-mdesc /Users/rohini/Downloads/stedgeai/Utilities/configs/stm32n6.mdesc --load-mpool /Users/rohini/Downloads/stedgeai/Utilities/mac/targets/stm32/resources/mpools/stm32n6.mpool --save-mpool-file /private/tmp/ws_dscnn_v2/neural_art__network/stm32n6.mpool --out-dir-prefix /private/tmp/ws_dscnn_v2/neural_art__network/ --native-float --mvei --cache-maintenance --Ocache-opt --enable-virtual-mem-pools --Os --Oauto-sched --output-info-file c_info.json
+====================================================================================
+
+Memory usage information  (input/output buffers are included in activations)
+------------------------------------------------------------------------------------
+	flexMEM    [0x34000000 - 0x34000000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM1    [0x34064000 - 0x34064000]:          0  B /          0  B  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	cpuRAM2    [0x34100000 - 0x34200000]:          0  B /      1.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM3    [0x34200000 - 0x34270000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM4    [0x34270000 - 0x342E0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	npuRAM5    [0x342E0000 - 0x34350000]:     94.234 kB /    448.000 kB  ( 21.03 % used) -- weights:          0  B (  0.00 % used)  activations:     94.234 kB ( 21.03 % used)
+	npuRAM6    [0x34350000 - 0x343C0000]:          0  B /    448.000 kB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+	octoFlash  [0x71000000 - 0x78000000]:     42.438 kB /    112.000 MB  (  0.04 % used) -- weights:     42.438 kB (  0.04 % used)  activations:          0  B (  0.00 % used)
+	hyperRAM   [0x90000000 - 0x92000000]:          0  B /     32.000 MB  (  0.00 % used) -- weights:          0  B (  0.00 % used)  activations:          0  B (  0.00 % used)
+---
+Total:                                           136.673 kB                                  -- weights:     42.438 kB                  activations:     94.234 kB                   
+====================================================================================
+
+
+Used memory ranges
+------------------------------------------------------------------------------------
+	npuRAM5    [0x342E0000 - 0x34350000]: 0x342E0000-0x342F78F0
+	octoFlash  [0x71000000 - 0x78000000]: 0x71000000-0x7100A9D0
+====================================================================================
+
+Epochs details
+------------------------------------------------------------------------------------
+Total number of epochs: 14 of which 0 implemented in software
+---
+epoch ID   HW/SW/EC Operation (SW only)
+epoch 1       HW    
+epoch 2       HW    
+epoch 3       HW    
+epoch 4       HW    
+epoch 5       HW    
+epoch 6       HW    
+epoch 7       HW    
+epoch 8       HW    
+epoch 9       HW    
+epoch 10      HW    
+epoch 11      HW    
+epoch 12      HW    
+epoch 13      HW    
+epoch 14      HW    
+====================================================================================
