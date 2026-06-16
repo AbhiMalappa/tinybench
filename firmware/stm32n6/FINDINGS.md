@@ -32,7 +32,8 @@ directly. The benchmark loop branches on `AI_NETWORK_IN_1_SIZE_BYTES` (490 vs 19
 - Requires a separate firmware (LL_ATON runtime sources from `Middlewares/ST/AI/Npu/ll_aton/`)
   AND an external-flash programming step (STM32CubeProgrammer + MX66 octo-flash loader, signed
   FSBL boot-from-flash) — i.e. cannot run from the simple SRAM-debug model used for CPU builds.
-- DS-CNN NPU: 18 epochs, 15 HW / 3 SW (DequantizeLinear, GlobalAveragePool, QuantizeLinear).
+- DS-CNN NPU: 18 epochs, 15 HW / **3 SW (DequantizeLinear, GlobalAveragePool, QuantizeLinear)** — the
+  SW global-pool epoch is the incompatibility (≤3×3 HW pooling window); see the DS-CNN FINDING below.
 
 ## FINDING: GRU-96 is infeasible on the Neural-ART NPU (as exported)
 
@@ -70,6 +71,55 @@ Parked, not closed. Possible future routes (not yet attempted), in rough order o
 
 GRU-96 NPU build artifacts: `kws_gru_npu/` is intentionally empty (build produced no output).
 
+## FINDING: DS-CNN's 2-D global average pooling cannot map to the Neural-ART NPU HW
+
+DS-CNN runs on the NPU but returns **numerically wrong output** (~21% acc / ~21% agreement vs the
+~92% expected; the NPU logits show near-zero/negative correlation with the reference — structurally
+scrambled, not noisy). After the RISAF firewall fix that made the NPU run real inference, this was
+the one remaining gap. **Definitively root-caused (2026-06-15) to DS-CNN's head, NOT the firmware.**
+
+### Root cause — a hardware pooling-window limit
+DS-CNN's head is a **2-D global average pool over a [50×11] feature map** (`AdaptiveAvgPool2d(1)`,
+exported as `ReduceMean axes=[-1,-2]`). Per ST's Neural-ART operator doc
+(`stedgeai .../Documentation/stneuralart_operator_support.html`):
+- **AveragePool / GlobalAveragePool in HW is limited to ≤3×3 windows** ("Kernel Height and Width
+  between 1 and 3 included"; larger windows "will be decomposed by the compiler"), plus a pooling
+  line-buffer limit of `width × input_channels ≤ 2048`.
+- `ReduceMean` maps to HW only "if it can be converted to GlobalAveragePool" — which still hits the
+  same window limit.
+
+A [50×11] (= 550-element) global pool vastly exceeds the ≤3×3 window, and **50 (=2·5²) and 11 (prime)
+cannot be tiled exactly by ≤3 kernels**, so the compiler emits a **software-fallback float epoch**:
+`DequantizeLinear → (Global)AveragePool → QuantizeLinear` (epochs 14–16 of 18). On this toolchain
+(ST Edge AI Core 2.2.0 / X-CUBE-AI 10.2.0-RC1) the resulting **HW→SW→HW handoff produces the scrambled
+output**. The SW epoch also forms a float "island" that pulls neighbouring ops into software.
+
+### Proven NOT firmware (the decisive test)
+The SAME NPU firmware runs **TC-ResNet8 at 95% acc / 100% agreement / 0.649 ms**. TC-ResNet8 is a
+**1-D temporal CNN**: its pre-pool feature map is **`[48, 7]` (width 7)**, so its `GlobalAveragePool`
+decomposes into ≤3×3 HW pools and stays in hardware (only 1 SW epoch = the input quantize). The NPU
+favours temporal (1-D) CNNs; a standard 2-D CNN that keeps a large spatial map until a global pool
+does not map.
+
+### Ruled out by experiment (6 in-place ONNX-surgery variants — all fall back to SW)
+Each generated with `stedgeai … --st-neural-art` and checked via the epoch report; every one lands in
+the software float island (artifacts in `kws_dscnn_npu_{hwpool,gap,gap3d,hier,convpool}/` and
+`checkpoints/dscnn_int8_v17_*.onnx`):
+1. reshape to 1-D `[b,64,1,550]` + `ReduceMean`
+2. `ReduceMean` → `GlobalAveragePool`
+3. 3-D reshape `[b,64,550]` + `GlobalAveragePool` (output `[b:1,h:1,c:64]`, identical form to TC-ResNet's)
+4. hierarchical small pools (`AveragePool` kernels 11 → 10 → 5)
+5. depthwise averaging `Conv2d` (kernel 50×11, weight 1/550) — large conv kernel also falls back
+6. `AveragePool` 3×3 — also SW (the float island swallows it)
+
+### Significance (paper) & resolution
+This is a **second model–accelerator incompatibility alongside GRU-96**: as exported, DS-CNN is not
+deployable on the Neural-ART NPU without architectural change — and the reason (the accelerator's
+≤3×3 pooling window favouring downsampled / 1-D feature maps) is itself an interesting cross-model
+result. **Resolution (planned):** re-architect DS-CNN with spatial downsampling so the pre-pool map
+is small (≤3×3-tileable, like TC-ResNet's width-7), retrain (GPU), re-quantize, regenerate → HW pool,
+then deploy. TC-ResNet8 NPU already works; the re-architected DS-CNN restores the third NPU cell.
+
 ## Firmware status
 
 Hand-written, CPU path (`firmware/stm32n6/src/`): `main.c` (800 MHz bringup, USART1 PE5/PE6
@@ -78,9 +128,12 @@ Hand-written, CPU path (`firmware/stm32n6/src/`): `main.c` (800 MHz bringup, USA
 
 NPU firmware (LL_ATON), `src_npu/`: DONE and running. `main_npu.c` (RISAF NPU-firewall open, NPU+cache
 clocks, XSPI mem-map for ext-flash, NPU @800 MHz), `kws_bench_npu.c` (LL_ATON epoch-loop driver matched
-to ST `ai_wrapper_ATON`). **TC-ResNet8 NPU verified 95% acc / 100% agreement / 0.649 ms.** DS-CNN NPU
-runs but is numerically wrong (~21%) — root cause = its software-fallback 2-D GlobalAveragePool epoch
-(model/generation issue, not firmware). **Full NPU bring-up story in `NPU_BRINGUP_JOURNEY.md`.**
+to ST `ai_wrapper_ATON`). **TC-ResNet8 NPU complete: full 11,005-sample run = 93.02% acc / 99.68%
+agreement / 0.649 ms median / 0 failures (17.2× vs CPU).** DS-CNN NPU
+runs but is numerically wrong (~21%) — definitively root-caused to its 2-D global-average-pool head
+exceeding the Neural-ART ≤3×3 HW pooling window (forces a SW-fallback float epoch), NOT the firmware
+(proven: same firmware runs TC-ResNet8 at 100% agreement). See the dedicated **FINDING** section above
+and the full bring-up story in `NPU_BRINGUP_JOURNEY.md`.
 
 ## Build & run (CPU path) — working recipe
 
@@ -114,8 +167,8 @@ STM32_Programmer_CLI -c port=SWD mode=UR -halt \
 | TC-ResNet8 CPU | ✅ full complete | 93.02% | 99.99% | 11.16 ms | 0/11005 |
 | DS-CNN CPU | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
 | GRU-96 CPU | ✅ full complete | 92.63% | 99.90% | 194.39 ms | 0/11005 |
-| TC-ResNet8 NPU | ✅ verified (120 diverse) | 95.0% | 100.00% | 0.649 ms (~17×) | 0 |
-| DS-CNN NPU | ⚠️ runs, wrong output | ~21% | ~21% | 1.36 ms (~183×) | 0 — SW GlobalAvgPool gen bug |
+| TC-ResNet8 NPU | ✅ complete (N=11,005) | 93.02% | 99.68% | 0.649 ms (17.2×) | 0 / 11005 |
+| DS-CNN NPU | ❌ incompatible as exported | ~21% | ~21% | 1.36 ms (~183×) | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDING) |
 
 All three also passed 5-sample smoke tests (100% agreement) before the full runs.
 

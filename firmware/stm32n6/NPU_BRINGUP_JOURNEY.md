@@ -6,8 +6,11 @@ Last updated: 2026-06-15.
 
 > TL;DR — The NPU now runs. **TC-ResNet8 NPU works perfectly (95% acc, 100% agreement, 0.649 ms,
 > ~17× vs CPU).** DS-CNN NPU runs at full speed (1.36 ms, ~183× vs CPU) but is numerically wrong
-> (~21%) — root cause isolated to its **software-fallback 2-D GlobalAveragePool epoch** (a model/
-> generation issue, NOT firmware). Firmware is proven correct because TC-ResNet8 hits 100% agreement.
+> (~21%) — **definitively root-caused** to its **2-D global average pool over a [50×11] map
+> exceeding the Neural-ART ≤3×3 HW pooling window**, which forces a software-fallback float epoch
+> (`Dequant→Pool→Quant`) whose HW→SW→HW handoff scrambles the output. NOT firmware (same firmware
+> runs TC-ResNet8 — a 1-D temporal CNN, width-7 pool — at 100%). Fix = re-architect DS-CNN with
+> spatial downsampling so the pre-pool map is small (retrain on GPU); see `FINDINGS.md` DS-CNN FINDING.
 
 ---
 
@@ -16,10 +19,14 @@ Last updated: 2026-06-15.
 | Model | NPU result | Latency | vs CPU | State |
 |---|---|---|---|---|
 | **TC-ResNet8** | **95.0% acc / 100% agreement** | **0.649 ms** | ~17× (11.16 ms) | ✅ DONE, paper-ready |
-| **DS-CNN** | ~21% acc / ~21% agreement (wrong) | 1.36 ms | ~183× (249 ms) | ❌ root-caused, fix pending |
+| **DS-CNN** | ~21% acc / ~21% agreement (wrong) | 1.36 ms | ~183× (249 ms) | ❌ incompatible as exported (HW pool ≤3×3) |
 | GRU-96 | — | — | — | ❌ infeasible on NPU (documented) |
 
-Open task: re-export DS-CNN so its global pool maps to HW (removes the broken SW epoch).
+Open task: **re-architect** DS-CNN with spatial downsampling so the pre-pool map is small enough that
+the global pool maps to HW (≤3×3 windows), then **retrain on GPU** → requantize → regenerate → deploy.
+Six in-place ONNX-surgery variants all fail (pooling/large-conv windows > the HW limit force a SW
+float epoch) — see the DS-CNN FINDING in `FINDINGS.md`. Pure surgery cannot fix it; the model's
+spatial resolution must shrink before the pool.
 
 ---
 
@@ -108,17 +115,23 @@ Open task: re-export DS-CNN so its global pool maps to HW (removes the broken SW
 
 ---
 
-## Recommended fix (DS-CNN) — pending
+## Fix (DS-CNN) — re-architecture required (pure surgery ruled out)
 
-Re-export DS-CNN so the global average pool **maps to NPU hardware** instead of falling back to
-software — e.g. reshape the 50×11 feature map so the pool is a HW-supported shape, express the global
-mean via a HW op, or restructure the head to avoid a SW epoch sandwiched between HW epochs. This
-removes the broken HW→SW→HW handoff entirely. Work is in the PyTorch/ONNX export pipeline
-(`kws/quantize.py` / the v17 export), not the firmware. (Note: the `v17` ONNX also mis-runs in plain
-onnxruntime — a yellow flag that a clean re-export is worth doing regardless.)
+ST's Neural-ART operator doc (`Documentation/stneuralart_operator_support.html`) settles it: HW
+pooling supports **≤3×3 windows only** (larger windows are decomposed; pooling line-buffer
+`width×channels ≤ 2048`). DS-CNN's global pool is over a **[50×11]=550** map, and 50 (=2·5²) / 11
+(prime) **cannot be tiled exactly by ≤3 kernels** → a SW float epoch is unavoidable in-place. Six
+ONNX-surgery variants confirmed this empirically (reshape-to-1D, GlobalAveragePool, 3-D reshape,
+hierarchical small pools, depthwise averaging conv 50×11, 3×3 pool — **all land in the SW island**;
+once any op dequantizes to float, the island swallows neighbours).
 
-Fallback if re-export can't avoid the SW pool: investigate the LL_ATON SW-operator path
-(`ll_sw_*.c` GlobalAveragePool kernel + the per-epoch cache maintenance at the HW↔SW boundary).
+**Therefore the model itself must change:** add spatial downsampling (strided convs/pools ≤3) so the
+**pre-pool feature map is small** (≤3×3-tileable, like TC-ResNet8's width-7 map), then the existing
+global pool maps to HW. Pipeline: edit `kws/models/dscnn.py` → **retrain on GPU** (CPU here is
+~12.7 min/epoch, too slow — cached MFCCs in `data/mfcc_cache/`) → `kws/quantize.py` → re-export v17 →
+`stedgeai` generate (confirm all-HW via the epoch report) → flash → full 11,005 run. Architecture is
+probed **host-only first** (HW/SW mapping depends only on tensor shapes, no training needed) so we
+retrain the correct design exactly once.
 
 ---
 

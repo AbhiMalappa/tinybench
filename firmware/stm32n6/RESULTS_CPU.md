@@ -1,4 +1,7 @@
-# STM32N6570-DK — KWS CPU Benchmark Results (Neural-ART NPU disabled)
+# STM32N6570-DK — KWS Benchmark Results (CPU + Neural-ART NPU)
+
+> CPU results below (Sections "Results"/"Latency"/"Observations"). **NPU (Neural-ART) results in the
+> "## NPU results" section near the end.** TC-ResNet8 NPU ✅ 93.02% / 99.68% / **0.649 ms (17.2× vs CPU)**.
 
 Platform: STM32N6570-DK, Cortex-M55 @ **800 MHz**, X-CUBE-AI `ai_network_*` software runtime
 (CPU only; NPU not used). Firmware loaded to SRAM (no internal flash) and run via ST-Link.
@@ -41,6 +44,28 @@ reference prediction — the firmware-correctness signal (≈100% ⇒ bit-accura
 - Latency spread is sub-0.02 ms (fixed compute, no input-dependent branching) — a single timed
   inference per sample is sufficient; the 100-reps-per-sample approach added nothing but time.
 - TC-ResNet8 uses far less activation RAM (8.8 KiB vs 137.8 KiB) but more weight ROM (65 vs 26 KiB).
+
+## NPU results (Neural-ART enabled, N = 11,005)
+
+Same board + host harness. Weights memory-mapped from external octo-flash (`0x71000000`), activations in
+npuRAM; NPU @ **800 MHz** (IC6÷1), LL_ATON runtime. Latency = on-device DWT time for one epoch-loop
+inference. Full run 2026-06-15 (`stm32n6_unknown_20260615_213555.{jsonl,_summary.json}`, wall clock 2,192 s).
+
+| Model | Status | MCU acc | MCU↔ONNX agreement | Latency median (ms) | NPU speedup vs CPU | Failures |
+|---|---|---|---|---|---|---|
+| TC-ResNet8 | ✅ complete | 93.02% | 99.68% | **0.649** | **17.2×** (11.16 ms) | 0 / 11005 |
+| DS-CNN     | ❌ incompatible as exported | — | — | — | — | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDINGS.md) |
+| GRU-96     | ❌ infeasible | — | — | — | — | 5-D sequence layout rejected by Neural-ART (see FINDINGS.md) |
+
+- TC-ResNet8 NPU latency distribution (ms): min 0.6451 / p50 0.6493 / p95 0.6509 / p99 0.6515 / max 0.6532.
+- **Bit-accurate at the accuracy level:** MCU accuracy 93.02% equals the CPU/host (93.02% / 93.01%);
+  per-sample agreement 99.68% — the ~0.3% delta is int8 NPU vs host-ONNX rounding on borderline clips
+  (expected for the Neural-ART quantized datapath). 0 failures over 11,005.
+- **17.2× faster than the same model on the M55 CPU** (0.649 ms vs 11.16 ms), and ~384× faster than the
+  DS-CNN CPU path (249 ms) — at 8.8 KiB activation RAM. This is the headline NPU result of Paper 1.
+- DS-CNN and GRU-96 do **not** deploy on the NPU as exported — two documented model–accelerator
+  incompatibilities (FINDINGS.md). DS-CNN is being re-architected with HW-friendly (≤3×3) pooling so a
+  future NPU cell can be measured; GRU-96 NPU stays infeasible (parked).
 
 ## Provenance
 - Result logs (per-clip JSONL + summary.json):
