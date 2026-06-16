@@ -67,7 +67,7 @@ STM32N6 has **no internal user flash** (FSBL architecture).
 | Model | Status | MCU acc | MCU↔ONNX agreement | Latency median (ms) | NPU speedup vs CPU | Failures |
 |---|---|---|---|---|---|---|
 | TC-ResNet8 | ✅ complete | 93.02% | 99.68% | **0.649** | **17.2×** (11.16 ms) | 0 / 11005 |
-| DS-CNN (v2, HW re-arch) | ✅ complete | 92.40% | 98.26% | **0.463** | **538×** (249 ms)† | 0 / 11005 |
+| DS-CNN (v2, HW re-arch) | ✅ complete | 92.40% | 98.26% | **0.463** | **138.8×** (same-model CPU 64.27 ms) | 0 / 11005 |
 | DS-CNN (original 50×11) | ❌ incompatible as exported | — | — | — | — | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDINGS.md) |
 | GRU-96     | ❌ infeasible | — | — | — | — | 5-D sequence layout rejected by Neural-ART (see FINDINGS.md) |
 
@@ -79,12 +79,27 @@ other change. Re-trained (Kaggle GPU, early-stop epoch 123, val 93.39%), re-quan
 re-deployed. Full NPU run 2026-06-16 (`stm32n6_unknown_20260616_142903.{jsonl,_summary.json}`, wall 2,182 s):
 **92.40% acc / 98.26% agreement / 0.463 ms / 0 failures** — accuracy on par with the original DS-CNN
 (92.71%), latency distribution min 0.4612 / p95 0.4638 / p99 0.4641 ms.
-†**Speedup caveat:** the 0.463 ms NPU figure is the re-arch'd 25×6 model (3.5 M MACC); the 249 ms CPU
-figure is the *original* 50×11 model (11.8 M MACC), so the 538× blends HW acceleration with the lighter
-model. For a same-model HW-vs-CPU number, run the v2 model on the CPU path too (not yet done).
-New artifacts: `checkpoints/dscnn_v2_int8.onnx`, `firmware/stm32n6/kws_dscnn_npu_v2/`, host ref
-`ref_preds_dscnn_onnx.npy` (original-model ref backed up as `*_v1_*`); firmware input quant updated to
-scale 0.04317872 / zp 11 in `Makefile.npu`.
+
+**Same-model NPU vs CPU (v2 on both sides).** The v2 model was also run on the **STM32 CPU path**
+(X-CUBE-AI, generated `--target stm32` from `dscnn_v2_int8.onnx`, weights embedded in SRAM) for an
+apples-to-apples HW-vs-CPU comparison. Full CPU run 2026-06-16
+(`stm32n6_unknown_20260616_154143.{jsonl,_summary.json}`, wall 2,706 s): **92.36% acc / 98.35% agreement /
+64.274 ms / 0 failures** (p95/p99 64.275/64.276). So **NPU = 138.8× faster than CPU on the *identical*
+model** (0.463 vs 64.27 ms) — the honest speedup (the earlier 538× blended in the lighter model). The MCU
+accuracy (CPU 92.36% / NPU 92.40%) is consistent across both engines and ≈ the host int8 ref (92.08%);
+the ~98.3% agreement (vs the original DS-CNN's 99.98%) is X-CUBE-AI/Neural-ART int8 arithmetic diverging
+from ORT slightly more for this model — not an error (accuracy is preserved).
+Versus the **original DS-CNN on CPU** (249.27 ms, 137.8 KiB RAM), v2 is **3.9× faster** at **6.7× less
+activation RAM** (20.4 KiB) and equal accuracy — i.e. the HW-aware redesign is a win on the CPU too.
+
+New artifacts: `checkpoints/dscnn_v2_int8.onnx`, `firmware/stm32n6/kws_dscnn_npu_v2/` (NPU) +
+`kws_dscnn_cpu_v2/` (CPU); host ref `ref_preds_dscnn_onnx.npy` (original backed up `*_v1_*`); firmware
+input quant scale 0.04317872 / zp 11 in both `Makefile.npu` and `Makefile`.
+
+> **Note (cross-board consistency, in progress):** the main CPU results table above still lists the
+> *original* DS-CNN (Arduino/ESP32/STM32-CPU were deployed with it). The v2 model is being rolled out to
+> all boards for a single consistent DS-CNN; STM32 (CPU+NPU) done, **ESP32 + Arduino pending**. The whole
+> matrix will be re-tabulated to v2 once those two are re-run.
 
 - TC-ResNet8 NPU latency distribution (ms): min 0.6451 / p50 0.6493 / p95 0.6509 / p99 0.6515 / max 0.6532.
 - **Bit-accurate at the accuracy level:** MCU accuracy 93.02% equals the CPU/host (93.02% / 93.01%);

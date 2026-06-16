@@ -178,7 +178,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR -halt \
 | DS-CNN CPU | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
 | GRU-96 CPU | ✅ full complete | 92.63% | 99.90% | 194.39 ms | 0/11005 |
 | TC-ResNet8 NPU | ✅ complete (N=11,005) | 93.02% | 99.68% | 0.649 ms (17.2×) | 0 / 11005 |
-| DS-CNN NPU (v2 HW re-arch) | ✅ complete | 92.40% | 98.26% | 0.463 ms (538×†) | 0 / 11005 — stride-(2,2) stem → 25×6, fully HW |
+| DS-CNN NPU (v2 HW re-arch) | ✅ complete | 92.40% | 98.26% | 0.463 ms (138.8× vs same-model CPU 64.27 ms) | 0 / 11005 — stride-(2,2) stem → 25×6, fully HW |
 | DS-CNN NPU (original 50×11) | ❌ incompatible | ~21% | ~21% | 1.36 ms | 2-D global pool > ≤3×3 HW window → SW-fallback (see FINDING) |
 
 All three also passed 5-sample smoke tests (100% agreement) before the full runs.

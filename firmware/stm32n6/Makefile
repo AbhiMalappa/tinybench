@@ -25,7 +25,8 @@ MODELDIR := $(PROJ)/kws_$(MODEL)_cpu
 BUILD   := $(PROJ)/build/$(MODEL)_cpu
 
 # ── Per-model defines ────────────────────────────────────────────────────────
-DEFS_dscnn    := -DAI_NETWORK_IN_SCALE=0.043562427f -DAI_NETWORK_IN_ZP=3
+# dscnn_v2 (HW-friendly 25x6) input quant: scale 0.04317872, zp 11 (was 0.043562427/3 for original 50x11).
+DEFS_dscnn    := -DAI_NETWORK_IN_SCALE=0.04317872226238251f -DAI_NETWORK_IN_ZP=11
 DEFS_tcresnet :=
 DEFS_gru      :=
 MODEL_DEFS := $(DEFS_$(MODEL))

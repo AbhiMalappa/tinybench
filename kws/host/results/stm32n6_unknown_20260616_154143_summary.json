@@ -1,0 +1,21 @@
+{
+  "board": "stm32n6",
+  "n_target": 11005,
+  "n_completed_cumulative": 11005,
+  "n_failed_cumulative": 0,
+  "session_ran": 11005,
+  "session_failed": 0,
+  "mcu_accuracy": 0.9235801908223534,
+  "mcu_ref_agreement": 0.9834620626987732,
+  "latency_ms": {
+    "median": 64.2741,
+    "p50": 64.2741,
+    "p95": 64.2754,
+    "p99": 64.276,
+    "min": 64.2709,
+    "max": 64.2769
+  },
+  "arena_used_kb": 0.0,
+  "session_wall_clock_s": 2705.947704076767,
+  "log_path": "kws/host/results/stm32n6_unknown_20260616_154143.jsonl"
+}
