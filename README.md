@@ -6,19 +6,39 @@ Part of the TinyBench series — Paper 1.
 **ML pipeline (Python):** Training, quantization, benchmark orchestration
 **Firmware (C):** STM32CubeIDE / TFLite Micro inference, UART protocol, cycle-counter timing
 
-## Status (2026-06-14)
+## Status (2026-06-17) — complete
 
 All boards done **in-house** (the "partner" split mentioned below is historical — built by Abhiraj).
 
-| Board | DS-CNN | TC-ResNet8 | GRU-96 |
+| Board | DS-CNN (v2) | TC-ResNet8 | GRU-96 |
 |---|---|---|---|
 | Arduino Nano 33 BLE | ✅ full | ✅ full | ❌ infeasible (TFLite-Micro buffer cap) |
 | ESP32-S3 (SIMD) | ✅ full | ✅ full | ❌ infeasible (TFLite-Micro buffer cap) |
 | STM32N6 CPU (NPU off) | ✅ full | ✅ full | ✅ full |
-| STM32N6 NPU (on) | ⏳ firmware TODO | ⏳ firmware TODO | ❌ infeasible (Neural-ART 4-D layout) |
+| STM32N6 NPU (on) | ✅ full | ✅ full | ❌ infeasible (Neural-ART 4-D layout) |
 
-Numbers + analysis: `../tinybench_kws_results.md`. STM32N6 build/run recipe: `firmware/stm32n6/FINDINGS.md`;
-STM32N6 CPU results detail: `firmware/stm32n6/RESULTS_CPU.md`.
+### DS-CNN v2 — HW-friendly re-architecture, deployed identically across all 4 platforms (N = 11,005 each)
+
+| Platform | Engine | MCU acc | MCU↔ref agreement | Latency median | Speedup vs original DS-CNN |
+|---|---|---|---|---|---|
+| Arduino Nano 33 BLE | CMSIS-NN TFLite Micro | 92.45% | 99.47% | 312.26 ms | 3.7× (1144 ms) |
+| ESP32-S3 (esp-nn SIMD) | esp-tflite-micro | 92.46% | 99.45% | 27.24 ms | 3.5× (94.6 ms) |
+| STM32N6 CPU | X-CUBE-AI | 92.36% | 98.35% | 64.27 ms | 3.9× (249 ms) |
+| STM32N6 **NPU** | Neural-ART | 92.40% | 98.26% | **0.463 ms** | **138.8× vs same-model CPU** |
+
+The **original DS-CNN (50×11 feature map) is incompatible with the Neural-ART NPU** — its 2-D global average
+pool exceeds the accelerator's ≤3×3 HW pooling window, forcing a software-fallback float epoch that
+produces wrong output (documented in `firmware/stm32n6/FINDINGS.md`). A **one-line fix** — a stride-(2,2)
+stem shrinking the pre-pool map to **25×6** — makes the model **fully HW (0 software epochs)** at **no
+accuracy cost** (92.4% vs the original 92.7%) and **3.5–3.9× faster on every CPU/MCU** with less RAM
+(STM32 CPU 20.4 vs 137.8 KiB). v2 is therefore the single consistent DS-CNN across the whole matrix; the
+original is retained as a documented model–accelerator incompatibility (alongside GRU-96). Accuracy is
+remarkably consistent across platforms (92.36–92.46%). Latency = one timed inference/sample (N=1),
+distribution over all 11,005 samples.
+
+Numbers + analysis: `../tinybench_kws_results.md` (pending v2 update). STM32N6 detail:
+`firmware/stm32n6/RESULTS_CPU.md` (NPU section + same-model speedup) and `firmware/stm32n6/FINDINGS.md`
+(DS-CNN FINDING + RESOLVED).
 
 ---
 
@@ -36,7 +56,8 @@ STM32N6 CPU results detail: `firmware/stm32n6/RESULTS_CPU.md`.
 
 | Model | Params | Float32 acc | INT8 TFLite acc | Arduino MCU acc (n=11,005) | INT8 ONNX | TFLite INT8 |
 |---|---|---|---|---|---|---|
-| DS-CNN-M | 25,251 | 92.71% | 92.70% | **92.15%** ✅ | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
+| DS-CNN v2 (25×6) | 25,251 | 92.35% | 92.55% | **92.45%** ✅ | `dscnn_v2_int8.onnx` | `dscnn_v2_int8.tflite` |
+| DS-CNN orig (50×11) | 25,251 | 92.71% | 92.70% | 92.15% | `dscnn_int8.onnx` | `dscnn_int8.tflite` |
 | TC-ResNet8 | 65,827 | 93.18% | 92.99% | **93.04%** ✅ | `tcresnet_int8.onnx` | `tcresnet_int8.tflite` |
 | GRU-96 | ~34K | 92.62% | 92.52% | ❌ infeasible — see results | `gru_int8.onnx` | `gru_int8.tflite` |
 

@@ -1,0 +1,21 @@
+{
+  "board": "arduino_nano33",
+  "n_target": 11005,
+  "n_completed_cumulative": 11005,
+  "n_failed_cumulative": 0,
+  "session_ran": 11005,
+  "session_failed": 0,
+  "mcu_accuracy": 0.9244888686960473,
+  "mcu_ref_agreement": 0.9947296683325761,
+  "latency_ms": {
+    "median": 312.2638,
+    "p50": 312.2638,
+    "p95": 312.38428,
+    "p99": 312.450732,
+    "min": 311.867,
+    "max": 312.6119
+  },
+  "arena_used_kb": 0.0,
+  "session_wall_clock_s": 12763.059983968735,
+  "log_path": "kws/host/results/arduino_nano33_unknown_20260616_213834.jsonl"
+}
