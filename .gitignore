@@ -35,6 +35,9 @@ st_ai_ws/
 /mfcc_cache/
 /ds_cnn_checkpoint/
 
+# Large regenerable test-vector packs (only the small ref_preds/labels/metadata are tracked)
+kws/host/test_vectors/test_vectors_*.npy
+
 # DS-CNN Neural-ART HW-pooling experiment artifacts (scratch; see FINDINGS.md DS-CNN FINDING)
 checkpoints/dscnn_int8_v17_*.onnx
 firmware/stm32n6/kws_dscnn_npu_gap/

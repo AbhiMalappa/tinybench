@@ -1,0 +1,30 @@
+{
+  "model": "dscnn",
+  "backend": "tflite",
+  "n_samples": 11005,
+  "n_frames": 49,
+  "n_mfcc": 10,
+  "n_classes": 35,
+  "input_bytes_per_sample": 490,
+  "reference_accuracy": 0.9254884143571104,
+  "quant_params": {
+    "input_scale": 0.046825237572193146,
+    "input_zero_point": -10,
+    "output_scale": 0.07143797725439072,
+    "output_zero_point": -32,
+    "input_shape_nhwc": [
+      1,
+      49,
+      10,
+      1
+    ],
+    "input_dtype": "int8"
+  },
+  "sources": {
+    "model": {
+      "path": "./checkpoints/dscnn_v2_int8.tflite",
+      "sha256": "69dcad5fd93d93e6bc5d1aaca7b38e0d3cd7ab180c1c44195045f3622e8e81ea"
+    }
+  },
+  "note": "HW-friendly DS-CNN v2 (25x6 stem-stride) INT8 TFLite for Arduino/ESP32"
+}
