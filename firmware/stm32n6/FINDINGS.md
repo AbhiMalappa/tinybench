@@ -175,7 +175,8 @@ STM32_Programmer_CLI -c port=SWD mode=UR -halt \
 | Config | Status | MCU acc | MCU↔ONNX agreement | Median latency | Failures |
 |---|---|---|---|---|---|
 | TC-ResNet8 CPU | ✅ full complete | 93.02% | 99.99% | 11.16 ms | 0/11005 |
-| DS-CNN CPU | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
+| DS-CNN CPU (orig 50×11) | ✅ full complete | 92.71% | 99.98% | 249.27 ms | 0/11005 |
+| DS-CNN CPU (v2 25×6) | ✅ full complete | 92.36% | 98.35% | 64.27 ms | 0/11005 — 3.9× faster, 6.8× less RAM |
 | GRU-96 CPU | ✅ full complete | 92.63% | 99.90% | 194.39 ms | 0/11005 |
 | TC-ResNet8 NPU | ✅ complete (N=11,005) | 93.02% | 99.68% | 0.649 ms (17.2×) | 0 / 11005 |
 | DS-CNN NPU (v2 HW re-arch) | ✅ complete | 92.40% | 98.26% | 0.463 ms (138.8× vs same-model CPU 64.27 ms) | 0 / 11005 — stride-(2,2) stem → 25×6, fully HW |

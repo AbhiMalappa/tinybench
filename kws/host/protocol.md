@@ -22,7 +22,7 @@ Every implementation MUST conform to this protocol. The host code is identical a
 │                          │
 │   loop():                │
 │     read 490 bytes       │ ← host writes one tensor
-│     run 100 inferences   │
+│     run N inferences     │   (N=1 on all current boards)
 │     emit RESULT JSON     │ → host parses
 │     emit "READY"         │ → host sends next
 │                          │
@@ -34,7 +34,7 @@ Every implementation MUST conform to this protocol. The host code is identical a
 Single line, valid JSON, key `event` is `"boot"`:
 
 ```json
-{"event":"boot","board":"<id>","model":"dscnn","input_bytes":490,"input_dtype":9,"output_bytes":35,"output_dtype":9,"arena_used":78436,"arena_size":98304,"clock_hz":64000000}
+{"event":"boot","board":"arduino_nano33","model":"dscnn","input_bytes":490,"input_dtype":9,"output_bytes":35,"output_dtype":9,"arena_used":27236,"arena_size":98304,"clock_hz":64000000}
 ```
 
 Required fields:

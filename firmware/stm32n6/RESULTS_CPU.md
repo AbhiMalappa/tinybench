@@ -17,7 +17,7 @@ reference prediction — the firmware-correctness signal (≈100% ⇒ bit-accura
 
 | Model | Status | MCU acc | Host ONNX ref acc | MCU↔ONNX agreement | Latency median (ms) | Failures |
 |---|---|---|---|---|---|---|
-| DS-CNN     | ✅ complete | 92.71% | 92.69% | 99.98% | 249.27 | 0 / 11005 |
+| DS-CNN (orig 50×11) | ✅ complete | 92.71% | 92.69% | 99.98% | 249.27 | 0 / 11005 |
 | TC-ResNet8 | ✅ complete | 93.02% | 93.01% | 99.99% | 11.16  | 0 / 11005 |
 | GRU-96     | ✅ complete | 92.63% | 92.57% | 99.90% | 194.39 | 0 / 11005 |
 
@@ -96,10 +96,11 @@ New artifacts: `checkpoints/dscnn_v2_int8.onnx`, `firmware/stm32n6/kws_dscnn_npu
 `kws_dscnn_cpu_v2/` (CPU); host ref `ref_preds_dscnn_onnx.npy` (original backed up `*_v1_*`); firmware
 input quant scale 0.04317872 / zp 11 in both `Makefile.npu` and `Makefile`.
 
-> **Note (cross-board consistency, in progress):** the main CPU results table above still lists the
-> *original* DS-CNN (Arduino/ESP32/STM32-CPU were deployed with it). The v2 model is being rolled out to
-> all boards for a single consistent DS-CNN; STM32 (CPU+NPU) done, **ESP32 + Arduino pending**. The whole
-> matrix will be re-tabulated to v2 once those two are re-run.
+> **Note (cross-board consistency — COMPLETE 2026-06-17):** the main CPU table above is the STM32N6 CPU
+> path (DS-CNN row there is the *original* 50×11, with its X-CUBE-AI footprint). **DS-CNN v2 is now deployed
+> on all 4 platforms** for a single consistent model: Arduino 92.45% / 312 ms, ESP32-S3 92.46% / 27.2 ms,
+> STM32-CPU 92.36% / 64.3 ms, STM32-NPU 92.40% / 0.463 ms — all 3.5–3.9× faster than the original DS-CNN at
+> equal accuracy. Full cross-board v2 matrix: `README.md` and `../tinybench_kws_results.md`.
 
 - TC-ResNet8 NPU latency distribution (ms): min 0.6451 / p50 0.6493 / p95 0.6509 / p99 0.6515 / max 0.6532.
 - **Bit-accurate at the accuracy level:** MCU accuracy 93.02% equals the CPU/host (93.02% / 93.01%);

@@ -139,7 +139,7 @@ The original CubeIDE-GUI steps below are superseded by the CLI flow actually use
 3. Compile: `make MODEL=<model>` (firmware in `firmware/stm32n6/`), then load to SRAM via
    `STM32_Programmer_CLI -c port=SWD mode=UR -halt -d ...elf -coreReg MSP=0x34200000 PC=<Reset_Handler> -run`
    (the board has **no internal flash**; `--start` would reset into the bootrom — use `mode=UR` + `-coreReg`/`-run`).
-4. Drive with `kws/host/benchmark_serial.py --backend onnx`. CPU (NPU-off) done for all 3 models; NPU-on pending.
+4. Drive with `kws/host/benchmark_serial.py --backend onnx`. **Complete**: CPU (NPU-off) for all 3 models; NPU-on for both CNNs (DS-CNN v2 + TC-ResNet8); GRU-96 NPU documented infeasible.
 
 ### ESP32-S3-DevKitC-1 and Arduino Nano 33 — TFLite Micro path
 
